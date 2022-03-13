@@ -1,0 +1,252 @@
+StartDate,EndDate,Status,Progress,Duration (in seconds),Finished,RecordedDate,ResponseId,DistributionChannel,UserLanguage,Q0b,Q1a,Q1b,Q1b_5_TEXT,Q1c,Q1c_4_TEXT,Q2_8,Q2_9,Q2_10,Q2_11,Q2_12,Q2_13,Q2_14,Q2_15,Q2_16,Q2_17,Q2_18,Q2_19,Q2_20,Q2_21,Q2_22,Q2_23,Q3a_1,Q3b,Q3c_1,Q3d,Q4a,Q4a_4_TEXT,Q4b,Q4b_4_TEXT,Q4c,Q5a,Q5a_7_TEXT,Q5b,Q5b_4_TEXT,Q5c,Q5d,Q5e,Q5f,Q6
+Start Date,End Date,Response Type,Progress,Duration (in seconds),Finished,Recorded Date,Response ID,Distribution Channel,User Language,Q0b,"You are a researcher conducting a cost-effectiveness analysis on a new drug, Drug X, in Massachusetts.  You find that the drug has an incremental cost-effectiveness ratio of $40,000/QALY (compared to a typical threshold of $50,000-$100,000 QALY) over a lifetime time horizon.  To provide the drug to the entire eligible population would cost about 20% of the current Medicaid budget over the next 3 years. 
+
+
+
+Which of the following best summarizes how you would describe this result in the discussion section in an academic paper?",Which of the following best explains your response in the previous question? - Selected Choice,Which of the following best explains your response in the previous question? - Other - Text,"You are asked to advise
+     Massachusetts policymakers on whether and how to adopt Drug X in its
+     Medicaid budget.   Which of the following best summarizes the advice you would give? - Selected Choice","You are asked to advise
+     Massachusetts policymakers on whether and how to adopt Drug X in its
+     Medicaid budget.   Which of the following best summarizes the advice you would give? - Other - Text","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1","Each box in the grid represents an intervention, with its ICER across the top and total cost across the left side.  For example, the top left box represents an intervention of low cost with an ICER of less than $50K/year.
+
+ 
+Click the boxes to indicate an opinion on these interventions in a United States setting:
+
+
+	One click (green): decision-maker should fund intervention
+	Two clicks (red): decision-maker should not fund the intervention
+	No click (white): unclear whether the decision-maker should fund the intervention
+
+
+
+
+ 
+
+ICERs are given in units of $/QALY.  Costs represent total costs for the eligible patient population (""budget impact"").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%” (Institute for Clinical and Economic Review). - Region #1",Q3a - I more strongly agree with the following:,Rate the strength of your agreement on the previous question.,Q3c - I more strongly agree with the following:,Rate the strength of your agreement on the previous question.,"In the last cost-effectiveness analysis to which you contributed, what standard did you use for the WTP threshold?  (Check all that apply.) - Selected Choice","In the last cost-effectiveness analysis to which you contributed, what standard did you use for the WTP threshold?  (Check all that apply.) - Other - Text",Why did you use this threshold?  (Check all that apply.) - Selected Choice,Why did you use this threshold?  (Check all that apply.) - Other - Text,What was the setting of your last cost-effectiveness analysis?,Current position - Selected Choice,Current position - Other - Text,Gender identity - Selected Choice,Gender identity - Prefer to self describe - Text,Age,"Years of experience (coursework, research, OR teaching)
+     with cost-effectiveness analysis",Number of about cost-effectiveness analyses to which you have contributed,Which of the following are your main focus in cost-effectiveness analysis?,Any further comments?
+"{""ImportId"":""startDate"",""timeZone"":""America/Denver""}","{""ImportId"":""endDate"",""timeZone"":""America/Denver""}","{""ImportId"":""status""}","{""ImportId"":""progress""}","{""ImportId"":""duration""}","{""ImportId"":""finished""}","{""ImportId"":""recordedDate"",""timeZone"":""America/Denver""}","{""ImportId"":""_recordId""}","{""ImportId"":""distributionChannel""}","{""ImportId"":""userLanguage""}","{""ImportId"":""QID49""}","{""ImportId"":""QID35""}","{""ImportId"":""QID10""}","{""ImportId"":""QID10_5_TEXT""}","{""ImportId"":""QID11""}","{""ImportId"":""QID11_4_TEXT""}","{""ImportId"":""QID29_8""}","{""ImportId"":""QID29_9""}","{""ImportId"":""QID29_10""}","{""ImportId"":""QID29_11""}","{""ImportId"":""QID29_12""}","{""ImportId"":""QID29_13""}","{""ImportId"":""QID29_14""}","{""ImportId"":""QID29_15""}","{""ImportId"":""QID29_16""}","{""ImportId"":""QID29_17""}","{""ImportId"":""QID29_18""}","{""ImportId"":""QID29_19""}","{""ImportId"":""QID29_20""}","{""ImportId"":""QID29_21""}","{""ImportId"":""QID29_22""}","{""ImportId"":""QID29_23""}","{""ImportId"":""QID40_1""}","{""ImportId"":""QID41""}","{""ImportId"":""QID34_1""}","{""ImportId"":""QID42""}","{""ImportId"":""QID45""}","{""ImportId"":""QID45_4_TEXT""}","{""ImportId"":""QID46""}","{""ImportId"":""QID46_4_TEXT""}","{""ImportId"":""QID51""}","{""ImportId"":""QID22""}","{""ImportId"":""QID22_7_TEXT""}","{""ImportId"":""QID43""}","{""ImportId"":""QID43_4_TEXT""}","{""ImportId"":""QID25""}","{""ImportId"":""QID26""}","{""ImportId"":""QID28""}","{""ImportId"":""QID50""}","{""ImportId"":""QID44_TEXT""}"

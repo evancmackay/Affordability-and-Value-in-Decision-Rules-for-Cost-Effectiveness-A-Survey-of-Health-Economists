@@ -1,0 +1,2308 @@
+---
+title: "Calculation of Numbers in 'Results'"
+toc: yes
+author: "Alyssa Bilinski, Evan Mackay, Joshua Salomon, Ankur Pandya"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+
+# data used in analysis is available
+responses <- read.csv("//Users/emackay/Documents/Affordability\ and\ Value\ in\ Decision\ Rules\ for\ Cost-Effectiveness\ --\ A\ Survey\ of\ Health\ Economists/data_wcategories.csv")
+
+responses$Age <- ifelse(responses$Q5c == "<25" | responses$Q5c == "25-40", "younger", "zolder")
+responses$YrsExperience <- as.character(responses$Q5d)
+responses$YrsExperience[which(responses$YrsExperience == "10-May")] <- "6+"
+responses$YrsExperience[which(responses$YrsExperience == "10+")] <- "6+"
+responses$YrsExperience <- as.factor(responses$YrsExperience)
+responses$NumCEA <- as.character(responses$Q5e)
+responses$NumCEA <- ifelse(responses$NumCEA == "0",
+                           "0",
+                           "1+")
+responses$NumCEA <- as.factor(responses$NumCEA)
+responses$CountryFocus <- responses$Q5f
+responses$CountryFocus[which(responses$CountryFocus == "")] <- NA
+responses$CountryFocus <- droplevels(as.factor(responses$CountryFocus))
+responses$Gender <- ifelse(responses$Q5b == "Female", "Female", "Other")
+responses$Position <- as.character(responses$Q5a)
+responses$Position <- ifelse(responses$Position %in% c("Government", "Industry", "Other"),
+                             responses$Position,
+                             "Academic")
+responses$Position <- as.factor(responses$Position)
+responses$Masters <- ifelse(responses$Q5a == "Master's Student", "Yes", "No")
+
+responses <- within(responses, CountryFocus <- relevel(CountryFocus, ref = "Low- and middle-income countries"))
+responses$CountryFocus[which(responses$CountryFocus == "")] <- NA
+```
+
+## Results - Paragraph 1
+
+```{r}
+
+summary(responses$Position)
+
+# Number of CEA
+summary(as.factor(as.character(responses$Q5e)))
+print("0 is 38, 1-2 is 46, 3-5 is 24, 5+ is 62")
+46 + 24 + 62 # This is 132
+
+# BUT!!! This is not sufficient. Quite a few people later on
+# described using a threshold in their own CEA, and so we will
+# describe people as having completed a CEA if they either have
+# used a threshold previously or if they mark having done 1+ CEAs
+
+summary(as.factor(as.character(responses$Q4a)))
+ce_5e <- ifelse(as.character(responses$Q5e) != "0", 
+                "Yes",
+                "No")
+# One person selected 3x GDP while also selecting "I have never contributed to a cost-effectiveness analysis." and skipping the related
+# questions, a <25 year old Masters student, and so we assume the 3x GDP was clicked in error and we categorize as never CEA
+ce_4a <- ifelse(as.character(responses$Q4a) %in% c("I have never contributed to a cost-effectiveness analysis.", "3x GDP,I have never contributed to a cost-effectiveness analysis."), 
+                "No",
+                "Yes")
+ce_either <- rep(NA, length(ce_4a))
+
+for (i in c(1:length(ce_4a))){
+  ce_either[i] <- ifelse((ce_5e[i] == "Yes" || ce_4a[i] == "Yes"),
+                    "Yes", 
+                    "No")  
+}
+summary(as.factor(ce_either))
+
+
+table(as.factor(as.character(responses$Q1a)))
+63 / 170
+97 / 170
+
+table(as.factor(as.character(responses$Q1c)))
+58 / 170
+21 / 170
+43 / 170
+
+# How do we get 26% who recommend funding for a subset of patients?
+# Go through responses$Q1c_4_TEXT and categorize responses. Then go through these categories
+# table(responses$Q1c_4_OTHER_CAT)
+(21 + 19 + 1 + 1 + 1 + 1) / 170
+# So 21 said "fund 1/2" as original response, the remaining 23 had the idea in their text response
+# after selecting "other"
+
+# Note that one person wrote - "Do not fund" after selecting other, so we put this with the main category
+(43 + 1) / 170
+
+```
+
+## Results - Paragraph 2 - Figure 2 
+```{r, echo = FALSE, include = FALSE, cache = TRUE}
+### Drop irrationals for everything related to the matrix analysis
+
+num_form <- data.frame(lapply(responses, as.character), stringsAsFactors=FALSE)
+
+# One of these is inputted as "Other" when they should be "None/Other"
+summary(as.factor(num_form$Q4b_4_Category))
+num_form$Q4b_4_Category[which(num_form$Q4b_4_Category == "Other")] <- "None/Other"
+summary(as.factor(num_form$Q4b_4_Category))
+
+
+# This to save the original format and also set it up as character instead of factor
+
+#which(names(responses) == "Q2_8")
+
+for (i in c(which(names(responses) == "Q2_8"):which(names(responses) == "Q2_23"))) {
+  for (j in c(1:dim(responses)[1])){
+    if (as.character(responses[j, i]) == "Like") {
+      num_form[j, i] <- strtoi(1)
+    } else if (as.character(responses[j, i]) == "Neutral") {
+      num_form[j, i] <- strtoi(0)
+    } else if (as.character(responses[j, i]) == "Dislike") {
+      num_form[j, i] <- strtoi(-1)
+    }
+  }
+}
+
+# Old numbers from when the data were in a different order
+# 107 just needs to have row 4, column 2 changed to "Dislike" (CHECKED)
+# 76 just needs to have row 1, column 3 changed to "Like" (CHECKED)
+# 142 just needs a 1 to fill in the row they intended (CHECKED)
+# 123 just needs one box to be filled differently -->  (CHECKED)
+# probably intended ICER hawk
+# num_form$Q2_10[76] <- 1
+# num_form$Q2_21[107] <- -1
+# num_form$Q2_22[142] <- -1
+# num_form$Q2_22[123] <- -1
+
+# THESE NUMBERS CHANGE WITH THE ROWS RELABELED
+# Number 129 Needs to have row 3 column 4 switched to "Dislike"?
+# Number 94 needs row 3 column 1 switched to like
+# Number 5 needs row 3 column 4 switched to "dislike"
+# Number 117 needs row row 2 column 4 switched to "dislike"
+num_form$Q2_10[94] <- 1
+num_form$Q2_21[117] <- -1
+num_form$Q2_22[5] <- -1
+num_form$Q2_22[129] <- -1
+
+
+
+# 
+irrational = rep(NA, dim(num_form)[1])
+# 
+for (indiv in c(1:dim(num_form)[1])){
+
+q = indiv
+
+irr_check <- matrix(NA, 4, 4)
+irr_check[1, 1] <- strtoi(num_form$Q2_8[q])
+irr_check[1, 2] <- strtoi(num_form$Q2_9[q])
+irr_check[1, 3] <- strtoi(num_form$Q2_10[q])
+irr_check[1, 4] <- strtoi(num_form$Q2_11[q])
+irr_check[2, 1] <- strtoi(num_form$Q2_12[q])
+irr_check[2, 2] <- strtoi(num_form$Q2_13[q])
+irr_check[2, 3] <- strtoi(num_form$Q2_14[q])
+irr_check[2, 4] <- strtoi(num_form$Q2_15[q])
+irr_check[3, 1] <- strtoi(num_form$Q2_16[q])
+irr_check[3, 2] <- strtoi(num_form$Q2_17[q])
+irr_check[3, 3] <- strtoi(num_form$Q2_18[q])
+irr_check[3, 4] <- strtoi(num_form$Q2_19[q])
+irr_check[4, 1] <- strtoi(num_form$Q2_20[q])
+irr_check[4, 2] <- strtoi(num_form$Q2_21[q])
+irr_check[4, 3] <- strtoi(num_form$Q2_22[q])
+irr_check[4, 4] <- strtoi(num_form$Q2_23[q])
+irr_check
+
+irrational_indiv = "No"
+for (x in c(1:4)){
+  for (y in c(1:4)){
+    curr_val = irr_check[x, y]
+
+    for (i in c(1:x)){
+      for (j in c(1:y)){
+        if(irr_check[i, j] < curr_val){irrational_indiv = "Yes"}
+      }
+    }
+  }
+}
+
+#print(irrational)
+irrational[indiv] <- irrational_indiv
+
+}
+
+irrational
+
+which(irrational == "Yes")
+length(which(irrational == "Yes"))
+
+library(gplots)
+library(RColorBrewer)
+
+irrational_rows <- which(irrational == "Yes")
+# irrational_rows <- c(4,  50,  56,  79,  94, 103, 116, 121, 127, 128, 129, 130, 132, 135, 136, 139, 141, 144, 149, 153, 154, 160, 162, 163, 164, 170)
+
+dim(num_form)
+
+# Only drop these rows if we're working with the full dataframe
+if (dim(num_form)[1] == 170){
+  num_form_dropped <- num_form[-c(irrational_rows), ]
+  irrational_df <- num_form[c(irrational_rows), ]
+}
+
+dim(num_form_dropped)
+dim(irrational_df)
+
+```
+
+```{r, include = FALSE}
+subset_click_vals <- function(x, df) {
+  click_vals <- matrix(NA, 4, 4)
+  
+  click_vals[1, 1] <- mean(strtoi(df$Q2_8[x]), na.rm = TRUE)
+  click_vals[2, 1] <- mean(strtoi(df$Q2_9[x]), na.rm = TRUE)
+  click_vals[3, 1] <- mean(strtoi(df$Q2_10[x]), na.rm = TRUE)
+  click_vals[4, 1] <- mean(strtoi(df$Q2_11[x]), na.rm = TRUE)
+  click_vals[1, 2] <- mean(strtoi(df$Q2_12[x]), na.rm = TRUE)
+  click_vals[2, 2] <- mean(strtoi(df$Q2_13[x]), na.rm = TRUE)
+  click_vals[3, 2] <- mean(strtoi(df$Q2_14[x]), na.rm = TRUE)
+  click_vals[4, 2] <- mean(strtoi(df$Q2_15[x]), na.rm = TRUE)
+  click_vals[1, 3] <- mean(strtoi(df$Q2_16[x]), na.rm = TRUE)
+  click_vals[2, 3] <- mean(strtoi(df$Q2_17[x]), na.rm = TRUE)
+  click_vals[3, 3] <- mean(strtoi(df$Q2_18[x]), na.rm = TRUE)
+  click_vals[4, 3] <- mean(strtoi(df$Q2_19[x]), na.rm = TRUE)
+  click_vals[1, 4] <- mean(strtoi(df$Q2_20[x]), na.rm = TRUE)
+  click_vals[2, 4] <- mean(strtoi(df$Q2_21[x]), na.rm = TRUE)
+  click_vals[3, 4] <- mean(strtoi(df$Q2_22[x]), na.rm = TRUE)
+  click_vals[4, 4] <- mean(strtoi(df$Q2_23[x]), na.rm = TRUE)
+  
+  return(click_vals)
+}
+
+make_heat_map <- function(x, y) {
+  return(heatmap.2(x,
+  #cellnote = mat_data,  # same data set for cell labels
+  main = y, # heat map title
+  notecol="black",      # change font color of cell labels to black
+  density.info="none",  # turns off density plot inside color legend
+  trace="none",         # turns off trace lines inside the heat map
+  margins =c(5,5),     # widens margins around plot
+  scale = "none",
+  col=brewer.pal(9,"PiYG"),       # use on color palette defined earlier
+  #breaks=col_breaks,    # enable color transition at specified limits
+  dendrogram="none",     # only draw a row dendrogram
+  Colv="NA",
+  Rowv = "NA", 
+  breaks = seq(-1, 1, length.out = 10)))
+}
+
+```
+
+```{r, include = FALSE}
+library(gplots)
+library(RColorBrewer)
+
+indecisive <- rep(NA, dim(num_form_dropped)[1])
+
+for (j in 1:dim(num_form_dropped)[1]){
+  zero_count <- length(which(num_form_dropped[j, c(17:32)] == 0))
+  indecisive[j] <- ifelse(zero_count > 8, "Yes", "No")
+}
+
+which(indecisive == "Yes")
+
+for (unsure in c(which(indecisive == "Yes"))){
+  make_heat_map(subset_click_vals(unsure, num_form_dropped), unsure)
+}
+
+make_heat_map(subset_click_vals(which(indecisive == "Yes"), num_form_dropped), "Unsure")
+
+```
+
+```{r, include = FALSE}
+
+icer_hawk_hard <- rep(NA, dim(num_form_dropped)[1])
+icer_hawk_soft <- rep(NA, dim(num_form_dropped)[1])
+
+
+# Turn it into numeric
+num_form_dropped[, c(17:32) + 2] <- sapply(num_form_dropped[, c(17:32) + 2], as.numeric)
+
+for (j in 1:dim(num_form_dropped)[1]){
+  if ((sum(num_form_dropped[j, c(17:20)+2]) == 4) & 
+      (sum(num_form_dropped[j, c(29:32)+2]) == -4)){
+    icer_hawk_hard[j] = "Yes"
+  } else {
+    icer_hawk_hard[j] = "No"
+  }
+  
+  if ((-1 %in% num_form_dropped[j, c(17, 18, 19, 20)+2]) ||
+      (1 %in% num_form_dropped[j, c(29, 30, 31,32)+2])){
+    icer_hawk_soft[j] = "No"
+  } else {
+    icer_hawk_soft[j] = "Yes"
+  }
+}
+
+which(icer_hawk_hard == "Yes")
+which(icer_hawk_soft == "Yes")
+length(which(icer_hawk_hard == "Yes"))
+length(which(icer_hawk_soft == "Yes"))
+
+```
+
+
+```{r, include = FALSE}
+
+budget_hawk_hard <- rep(NA, dim(num_form_dropped)[1])
+budget_hawk_soft <- rep(NA, dim(num_form_dropped)[1])
+
+for (j in 1:dim(num_form_dropped)[1]){
+  if ((sum(num_form_dropped[j, c(17,21,25,29)+2]) == 4) & 
+      (sum(num_form_dropped[j, c(20,24,28,32)+2]) == -4)){
+    budget_hawk_hard[j] = "Yes"
+  } else {
+    budget_hawk_hard[j] = "No"
+  }
+  
+  if ((-1 %in% num_form_dropped[j, c(17,21,25,29)+2]) ||
+      (1 %in% num_form_dropped[j, c(20,24,28,32)+2])){
+    budget_hawk_soft[j] = "No"
+  } else {
+    budget_hawk_soft[j] = "Yes"
+  }
+  # if -1 in c(17, 21, 25, 29) or 1 in c(20, 21, 25, 29) then it's soft
+}
+
+
+which(budget_hawk_hard == "Yes")
+which(budget_hawk_soft == "Yes")
+length(which(budget_hawk_hard == "Yes"))
+length(which(budget_hawk_soft == "Yes"))
+
+```
+
+
+```{r, echo=FALSE, include = FALSE}
+#Making scores
+
+# Just read the same document in fresh here
+df <- read.csv("/Users/emackay/Documents/Affordability\ and\ Value\ in\ Decision\ Rules\ for\ Cost-Effectiveness\ --\ A\ Survey\ of\ Health\ Economists/data_wcategories.csv")
+
+library(tidyverse)
+
+# encode variables
+v = df %>% select(ResponseId, names(df)[grepl("Q2_", names(df))]) #%>% slice(c(-4, -50, -56, -79, -94, -103, -76, -107))
+v = data.frame(lapply(v, function(a) gsub("Like", 1, a)))
+v = data.frame(lapply(v, function(a) gsub("Dislike", -1, a)))
+v = data.frame(lapply(v, function(a) gsub("Neutral", 0, a)))
+asNumeric <- function(x) as.numeric(as.character(x))
+factorsNumeric <- function(d) modifyList(d, lapply(d[, sapply(d, is.factor)],
+                                                   asNumeric))
+v = factorsNumeric(v)
+
+v$Q2_8 <- as.numeric(v$Q2_8)
+v$Q2_9 <- as.numeric(v$Q2_9)
+v$Q2_10 <- as.numeric(v$Q2_10)
+v$Q2_11 <- as.numeric(v$Q2_11)
+v$Q2_12 <- as.numeric(v$Q2_12)
+v$Q2_13 <- as.numeric(v$Q2_13)
+v$Q2_14 <- as.numeric(v$Q2_14)
+v$Q2_15 <- as.numeric(v$Q2_15)
+v$Q2_16 <- as.numeric(v$Q2_16)
+v$Q2_17 <- as.numeric(v$Q2_17)
+v$Q2_18 <- as.numeric(v$Q2_18)
+v$Q2_19 <- as.numeric(v$Q2_19)
+v$Q2_20 <- as.numeric(v$Q2_20)
+v$Q2_21 <- as.numeric(v$Q2_21)
+v$Q2_22 <- as.numeric(v$Q2_22)
+v$Q2_23 <- as.numeric(v$Q2_23)
+
+# class(v$Q2_8)
+
+v$col_score = abs(v$Q2_8 + v$Q2_9 + v$Q2_10 + v$Q2_11) + abs(v$Q2_12 + v$Q2_13 + v$Q2_14 + v$Q2_15) +
+                  abs(v$Q2_16 + v$Q2_17 + v$Q2_18 + v$Q2_19) +  abs(v$Q2_20 + v$Q2_21 + v$Q2_22 + v$Q2_23)
+v$row_score = abs(v$Q2_8 + v$Q2_12 + v$Q2_16 + v$Q2_20) + abs(v$Q2_9 + v$Q2_13 + v$Q2_17 + v$Q2_21) +
+                  abs(v$Q2_10 + v$Q2_14 + v$Q2_18 + v$Q2_22) +  abs(v$Q2_11 + v$Q2_15 + v$Q2_19 + v$Q2_23)
+v$diff = v$col_score - v$row_score
+
+out = v
+# save(out, file = "scores.RData")
+```
+
+```{r, include = FALSE}
+
+out$diff
+
+if (dim(out)[1] == 170){
+  scores_dropped <- out[-c(irrational_rows), ]
+  irrational_scores <- out[c(irrational_rows), ]
+}
+
+dim(scores_dropped)
+dim(irrational_scores)
+
+summary(scores_dropped)
+summary(irrational_scores)
+```
+
+```{r, include = FALSE}
+make_ggplot_heatmap <- function(x, title){
+
+df.chart_data <- expand.grid(cost = c("High cost", "At alarm bell\n threshold", "Medium cost", "Low cost")
+                           , icer = c("<50K", "50-100K", "100-300K", "300K+")
+                           )
+
+df.chart_data$suggest <- as.vector(x)
+
+t <- theme(axis.line = element_blank(), panel.background = element_blank(), 
+           plot.background = element_blank(),
+           panel.border = element_blank(),
+           panel.grid.major=element_blank(),
+           panel.grid.minor=element_blank(), 
+           plot.title=element_text(size=11, hjust = 0.5),
+           axis.text.x = element_text(size = 20, color = "black"), 
+           axis.text.y = element_text(size = 20, color = "black", face = "bold"),
+           axis.title.x = element_text(size = 17, color = "black"),
+           axis.title.y = element_text(size = 17, color = "black"),
+           line = element_blank())
+
+return(
+ggplot(data = df.chart_data, aes(x = icer, y = rev(cost))) +
+  geom_tile(aes(fill = suggest)) +
+  ggtitle(paste(title)) +
+  theme(plot.title = element_text(face="bold", size=34, hjust=0)) + 
+  t +
+  scale_fill_gradient2(low = "darkred", mid = "white", high = "darkgreen") +
+  ylab("") +
+  xlab("") + 
+  theme(legend.title = element_text(size = 10),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size=22),
+        axis.title=element_text(size=14,face="bold"),
+        axis.text.x = element_text(angle = 0, hjust = 0.5, face = "bold"),
+        legend.position="none"))+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+}
+```
+
+```{r, eval = FALSE, include = FALSE}
+ make_ggplot_heatmap(subset_click_vals(category1, num_form_dropped), "Hard ICER Hawk \n (n = 38, 26%)")
+
+```
+
+
+```{r, include = FALSE}
+budget <- which(budget_hawk_soft == "Yes")
+icer <- which(icer_hawk_hard == "Yes")
+
+# Fortunately no intersection between these criteria! This is double checking :)
+intersect(which(budget_hawk_soft == "Yes"),
+          which(icer_hawk_hard == "Yes"))
+
+neither <- which(!c(1:dim(num_form_dropped)[1]) %in% c(which(icer_hawk_hard == "Yes"), which(budget_hawk_soft == "Yes")))
+
+```
+
+```{r, include = FALSE}
+length(icer)
+
+length(which(icer_hawk_soft == "Yes"))
+soft_icer_nothardnotbudget <- intersect(neither, which(icer_hawk_soft == "Yes"))
+
+which(icer_hawk_soft == "Yes")
+
+stillneither <- neither[which(!neither %in% soft_icer_nothardnotbudget)]
+length(stillneither)
+
+```
+
+```{r, include = FALSE}
+soft_budgets <- which(budget_hawk_soft == "Yes")
+soft_icers <- which(icer_hawk_soft == "Yes")
+hard_budgets <- which(budget_hawk_hard == "Yes")
+hard_icers <- which(icer_hawk_hard == "Yes")
+length(soft_budgets)
+length(soft_icers)
+length(hard_budgets)
+length(hard_icers)
+
+
+
+intersect(soft_budgets, soft_icers)
+length(intersect(soft_budgets, soft_icers))
+
+```
+
+
+```{r, fourCriteria, include = FALSE}
+
+category1 <- hard_icers
+# 25% are Hard ICERs
+length(which(icer_hawk_hard == "Yes"))
+length(category1)
+
+# Now working on category 2
+# soft ICER hawks (only soft ICER hawk OR both with score > 0)
+icers_soft_not_hard <- soft_icers[which(!soft_icers %in% hard_icers)]
+
+double_soft <- intersect(soft_budgets, soft_icers)
+
+icers_soft_not_hard_excluding_doubles <- icers_soft_not_hard[which(!icers_soft_not_hard %in% double_soft)]
+
+double_soft_positive_criteria <- double_soft[which(scores_dropped$diff[double_soft] > 0)]
+
+length(icers_soft_not_hard_excluding_doubles)
+length(double_soft_positive_criteria)
+
+category2 <- c(icers_soft_not_hard_excluding_doubles, double_soft_positive_criteria)
+
+# Now working on category 3
+# budget hawks (only soft budget hawk OR both with score < 0)
+soft_budgets
+
+soft_budgets_excluding_doubles <- soft_budgets[which(!soft_budgets %in% double_soft)]
+
+double_soft_not_positive_criteria <- double_soft[which(!scores_dropped$diff[double_soft] > 0)]
+category3 <- c(soft_budgets_excluding_doubles, double_soft_not_positive_criteria)
+
+# Now working on category 4
+#other
+category4 <- which(!c(1:dim(num_form_dropped)[1]) %in% c(category1, category2, category3))
+
+length(category1)
+length(category2)
+length(category3)
+length(category4)
+
+# So everybody is in one category
+dim(num_form_dropped)[1] - length(category1) - length(category2) - length(category3) - length(category4)
+
+intersect(category4, category1)
+intersect(category4, category2)
+intersect(category4, category3)
+intersect(category4, category4)
+
+intersect(category3, category1)
+intersect(category3, category2)
+intersect(category3, category3)
+intersect(category3, category4)
+
+intersect(category2, category1)
+intersect(category2, category2)
+intersect(category2, category3)
+intersect(category2, category4)
+
+intersect(category1, category1)
+intersect(category1, category2)
+intersect(category1, category3)
+intersect(category1, category4)
+
+# # 37 are soft_budgets, which means only 11 are soft budget but not soft ICER
+# length(soft_budgets)
+# 
+# # 26 are in both soft categories and will be decided by the "scores" that Alyssa created
+# length(intersect(soft_budgets, soft_icers))
+# 
+# # 104 are soft ICER, so 78 are in this category but are not in soft_budget
+# length(soft_icers)
+# 
+# # All 36 hard ICERs are also soft ICERs, obviously
+# length(intersect(soft_icers, hard_icers))
+# 
+# # None of the hard icers are under soft budgets, obviously
+# length(intersect(soft_budgets, hard_icers))
+# 
+# 
+# 
+# length(which(icer_hawk_soft == "Yes"))
+# 
+# 
+# # length(intersect(soft_icers, which(scores_dropped$diff_cat == "(2,15]")))
+# # length(intersect(soft_budgets, which(scores_dropped$diff_cat == "(2,15]")))
+# # length(intersect(soft_icers, which(scores_dropped$diff_cat == "(-10,-2]")))
+# # length(intersect(soft_budgets, which(scores_dropped$diff_cat == "(-10,-2]")))
+# # scores_dropped$diff[which(budget_hawk_hard == "Yes")]
+# # which(scores_dropped$diff_cat == "(2,15]")
+# # length(which(icer_hawk_soft == "Yes"))
+```
+
+```{r}
+length(category1)
+length(category2)
+length(category3)
+length(category4)
+```
+
+```{r, include = FALSE}
+
+# make_ggplot_heatmap(subset_click_vals(category1, num_form_dropped), "Hard ICER Hawk,", length(category1)) # 38 - 26%
+# 
+# make_ggplot_heatmap(subset_click_vals(category2, num_form_dropped), "Soft ICER Hawk,", length(category2)) # 33%
+# 
+# make_ggplot_heatmap(subset_click_vals(category3, num_form_dropped), "Budget Hawk,", length(category3)) # 23%
+# This was the original working title of the "moderates". "Balancers" and other things were also considered.
+# make_ggplot_heatmap(subset_click_vals(category4, num_form_dropped), "All Things Considered,", length(category4)) # 18%
+make_ggplot_heatmap(subset_click_vals(category1, num_form_dropped), "Hard ICER Hawk (n = 38, 26%)") # 38 - 26%
+
+p1 <- make_ggplot_heatmap(subset_click_vals(category1, num_form_dropped), "Hard ICER Hawk \n (n = 38, 26%)") # 38 - 26%
+
+p2 <- make_ggplot_heatmap(subset_click_vals(category2, num_form_dropped), "Soft ICER Hawk \n (n = 47, 33%)") # 33%
+
+p3 <- make_ggplot_heatmap(subset_click_vals(category3, num_form_dropped), "Budget Hawk \n (n = 33, 23%)") # 23%
+
+p4 <- make_ggplot_heatmap(subset_click_vals(category4, num_form_dropped), "Moderate \n (n = 26, 18%)") # 18%
+
+num_form_dropped$Category_Label
+
+```
+
+```{r}
+
+category1
+category2
+category3
+category4
+
+category_label <- rep(NA, max(c(category1, category2, category3, category4)))
+category_label[category1] <- "Hard ICER Hawk"
+category_label[category2] <- "Soft ICER Hawk"
+category_label[category3] <- "Budget Hawk"
+category_label[category4] <- "Moderate"
+category_label
+
+num_form_dropped$Category_Label <- category_label
+
+```
+
+```{r, echo = FALSE}
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+
+#library(ggplot)
+library(ggplot2)
+multiplot(p1, p3, p2, p4, cols = 2)
+
+# Now trying global axes
+multiplot(p1, p3, p2, p4, cols = 2)
+
+library(ggpubr) 
+
+figure = ggarrange(p1, p3, p2, p4, ncol = 2, nrow = 2, common.legend = TRUE, legend="right")
+new_fig_3 <- annotate_figure(figure, top = text_grob("Valuing trade-offs between cost-effectiveness and affordability", size = 34, face = "bold", hjust = 0.45), 
+                left = text_grob("Budget Impact", size = 24, face = "bold", rot = 90), 
+                bottom = text_grob("Cost($)/QALY", size = 24, face = "bold"))
+
+new_fig_3
+
+p1
+## Results - Paragraph 3 - Figure 1
+
+```
+
+
+```{r, echo = FALSE, include = FALSE}
+
+library(ggplot2)
+
+data_for_lower_right <- num_form[, ]
+
+# The lower right chart will be a stacked bar chart. 
+# The x axis will be the different levels. 
+# The fill in each bar will be the justification.
+
+# There was a person who responded for threshold, "3x GDP,I have never contributed to a cost-effectiveness analysis."
+# This person did not provide a justification and it appears the 3x GDP was selected in error
+responses$Q4a[which(responses$Q4a == "3x GDP,I have never contributed to a cost-effectiveness analysis.")] <- "I have never contributed to a cost-effectiveness analysis."
+
+threshold <- responses$Q4a
+
+threshold_string <- rep(NA, length(threshold))
+
+for (i in c(1:length(threshold))){
+  threshold_string[i] <- toString(threshold[i])
+}
+
+for (i in c(1:length(threshold_string))){
+  if (threshold_string[i] == "Other"){
+    # Replace the assigned answer to the "Other" category
+    threshold_string[i] <- toString(responses$Q4a_4_Category[i])
+  }
+}
+
+# Replace blank with none/other
+threshold_string[which(threshold_string == "")] <- "None/Other"
+
+
+summary(as.factor(threshold_string))
+# How many people said 1x GDP?
+38 + 3 + 1 + 1 + 12 + 2 # 57
+
+# How many people said 3x GDP? 
+1 + 12 + 2 + 1 + 23 # 39
+
+# Total of 1x or 3x
+1 + 12 + 2 + 1 + 23 + 38 + 3 + 1 + 1 + 12 + 2 # 96
+
+# Total from this version
+sum(38, 3, 1, 1, 12, 2, 8, 2, 1, 23, 4, 17, 19) # Don't count the 39 who have never done a CEA, 131
+
+# This is where n = 17 comes from for Institutional and 4 for Empirical
+total_threshold = 131
+17 / total_threshold
+4 / total_threshold
+# earlier version said 97, true number is 96
+96 / total_threshold
+# Total can't be 134 or 131, can be 133 or 132 
+
+# I'm pretty sure I can just skip all of this and use the CATEGORY we assigned it
+justification <- responses$Q4b_4_Category
+justification_string <- rep(NA, length(justification))
+
+for (i in c(1:length(justification))){
+  justification_string[i] <- toString(justification[i])
+}
+
+# So now I find all the ones that have commas. And then I'll double
+# it and string split on the comma to get one in one row and another 
+# in the other or something like that.
+doubled_up_threshold <- grepl(",", threshold_string)
+
+threshold_undoubled <- c()
+# This won't undouble the justification yet, but will just make sure the justification
+# and threshold stay in line with one another
+justification_keepingtrack <- c()
+
+
+for (i in c(1:length(threshold_string))){
+  # Check if there are multiple in this box
+  if (doubled_up_threshold[i]){
+    # Split it into parts on the comma
+    one_by_one <- strsplit(threshold_string[i], ",")
+    
+    # Add each part one by one
+    for (j in c(1:length(one_by_one[[1]]))){
+      if (substring(one_by_one[[1]][j], 1, 1) == " "){
+        one_by_one[[1]][j] <- substring(one_by_one[[1]][j], 2)
+      }
+      
+      threshold_undoubled <- c(threshold_undoubled, one_by_one[[1]][j])
+      # This will just copy the same justification that many times
+      justification_keepingtrack <- c(justification_keepingtrack, justification_string[i])
+    }
+    
+  }
+  # If not doubled up, then just add like normal
+  else {
+    threshold_undoubled <- c(threshold_undoubled, threshold_string[i])
+    justification_keepingtrack <- c(justification_keepingtrack, justification_string[i])
+  }
+}
+
+threshold_undoubled
+justification_keepingtrack
+
+# Get rid of that space just makes it easier later on
+justification_keepingtrack[which(justification_keepingtrack == "Societal WTP, Budget WTP")] <- "Societal WTP,Budget WTP"
+justification_keepingtrack[which(justification_keepingtrack == "Other")] <- "None/Other"
+summary(as.factor(justification_keepingtrack))
+
+
+# Now get rid of the small amount of doubling up in the justification
+doubled_up_justification <- grepl(",", justification_keepingtrack)
+
+justification_undoubled <- c()
+threshold_keepingtrack <- c()
+
+for (i in c(1:length(justification_keepingtrack))){
+  # Check if there are multiple in this box
+  if (doubled_up_justification[i]){
+    # Split it into parts on the comma
+    one_by_one <- strsplit(justification_keepingtrack[i], ",")
+    
+    # Add each part one by one
+    for (j in c(1:length(one_by_one[[1]]))){
+      justification_undoubled <- c(justification_undoubled, one_by_one[[1]][j])
+      # This will just copy the same justification that many times
+      threshold_keepingtrack <- c(threshold_keepingtrack, threshold_undoubled[i])
+      print(j)
+    }
+    
+  }
+  # If not doubled up, then just add like normal
+  else {
+    justification_undoubled <- c(justification_undoubled, justification_keepingtrack[i])
+    threshold_keepingtrack <- c(threshold_keepingtrack, threshold_undoubled[i])
+  }
+}
+
+justification_undoubled
+threshold_keepingtrack
+# Good, the length is only 199 which is what we expected because justification only
+# doubled four times
+length(justification_undoubled)
+length(threshold_keepingtrack)
+
+bottom_right_data_again <- data.frame(cbind(threshold_keepingtrack, justification_undoubled))
+names(bottom_right_data_again) <- c("Threshold", "Justification")
+
+dim(bottom_right_data_again)
+bottom_right_data_again <- bottom_right_data_again[-c(which(bottom_right_data_again$Threshold == "I have never contributed to a cost-effectiveness analysis.")), ]
+
+summary(as.factor(bottom_right_data_again$Threshold))
+# Just replacing with lower case x and dealing with the fact there were 3 ways of doing 3x+
+bottom_right_data_again$Threshold[which(bottom_right_data_again$Threshold == "1X GDP")] <- "1x GDP"
+bottom_right_data_again$Threshold[which(bottom_right_data_again$Threshold == "2X GDP")] <- "2x GDP"
+bottom_right_data_again$Threshold[which(bottom_right_data_again$Threshold == "3X GDP")] <- "3x+ GDP"
+bottom_right_data_again$Threshold[which(bottom_right_data_again$Threshold == "3x GDP")] <- "3x+ GDP"
+bottom_right_data_again$Threshold[which(bottom_right_data_again$Threshold == "3X+ GDP")] <- "3x+ GDP"
+bottom_right_data_again$Threshold[which(bottom_right_data_again$Threshold == "Other")] <- "None/Other"
+
+bottom_right_data_again$Threshold <- droplevels(as.factor(bottom_right_data_again$Threshold))
+
+summary(as.factor(bottom_right_data_again$Justification))
+bottom_right_data_again$Justification[which(bottom_right_data_again$Justification == "")] <- "None/Other"
+bottom_right_data_again$Justification <- droplevels(as.factor(bottom_right_data_again$Justification))
+
+# Old, alternative ways of displaying these data
+# dat <- data.frame(table(bottom_right_data_again$Threshold,bottom_right_data_again$Justification))
+# names(dat) <- c("Threshold","Justification","Count")
+# 
+# figure1_lowerright <- ggplot(data=dat, aes(x=Threshold, y=Count, fill=Justification)) + geom_bar(stat="identity")
+# figure1_lowerright 
+# 
+# # Try releveling the factor variable
+# dat$Justification <- factor(dat$Justification, levels = c("None/Other","Budget WTP", "Societal WTP", "Convention"))
+# figure1_lowerright <- ggplot(data=dat, aes(x=Threshold, y=Count, fill=Justification)) + geom_bar(stat="identity")
+# figure1_lowerright 
+# 
+# dat <- dat[-c(which(dat$Threshold == "None/Other")), ]
+# figure1_lowerright <- ggplot(data=dat, aes(x=Threshold, y=Count, fill=Justification)) + geom_bar(stat="identity")
+# figure1_lowerright 
+# 
+# dat$Threshold <- factor(dat$Threshold, levels = c("Empirical", "2x GDP", "Institutional", "3x+ GDP", "1x GDP"))
+# figure1_lowerright <- ggplot(data=dat, aes(x=Threshold, y=Count, fill=Justification)) + geom_bar(stat="identity")
+# figure1_lowerright 
+# # So move "Convention" to the bottom
+# dat <- rbind(dat[c(1:6), ], dat[c(13:24), ], dat[c(7:12), ])
+```
+
+```{r, echo = F, graph1, include = FALSE}
+
+confidence_3b <- substr(responses$Q3b, start = 1, stop = 20)
+choice_3b <- substr(responses$Q3a_1, start = 69, stop = 100)
+
+# This is how we will do cross-tabs
+#exam_tab <- table(responses$Q3a_1[1:dim(responses)[1]], responses$Q3b[1:dim(responses)[1]])
+exam_tab_3b <- table(choice_3b, confidence_3b)
+print("Two by two table: ")
+exam_tab_3b
+
+# # https://www.youtube.com/watch?v=VGKz3Jkx-9I
+# # Row and column summaries of this
+# margin.table(exam_tab, 1)
+# margin.table(exam_tab, 2)
+# 
+# # Just display to the nearest hundredth
+# round(prop.table(exam_tab), 2)
+# # Percent of each row
+# round(prop.table(exam_tab, 1), 2)
+# # Percent of each column
+# round(prop.table(exam_tab, 2), 2)
+# 
+# # Sparse cells mean that approximations may be incorrect
+# chisq.test(exam_tab)
+
+vals_3b <- c(exam_tab_3b[1, 1], exam_tab_3b[1, 2], exam_tab_3b[1, 3] + exam_tab_3b[2, 3], exam_tab_3b[2, 2], exam_tab_3b[2, 1])
+lables_3b <- c("Completely WTP", "Preference", "Nearly Equal", "Preference2", "Completely Budget")
+
+#hist(vals, breaks = 5)
+
+barplot(vals_3b, main="Societal WTP vs Current Budget", 
+  	xlab="Strength of Agreement", names.arg = lables_3b, 
+  	ylab = "Number of Respondents")
+
+dat_3b <- data.frame(Frequency = vals_3b,
+                  Action = gl(5, 1, labels = lables_3b))
+
+library(ggplot2)
+ggplot(dat_3b, aes(x = Action, y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("The willingness to pay threshold should reflect...") +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"))
+
+dat_3b <- data.frame(Frequency = c(vals_3b[1] + vals_3b[2], vals_3b[3], vals_3b[4] + vals_3b[5]),
+                  Action = gl(3, 1, labels = c("Societal WTP", "Ambivalent", "Budget WTP")))
+
+library(ggplot2)
+graph1 <- ggplot(dat_3b, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5)+
+  ggtitle("The willingness to pay threshold \n should reflect:") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 81)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 18, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph1
+
+```
+
+```{r, echo = F, graph2, include = FALSE}
+
+confidence_3d <- substr(responses$Q3d, start = 1, stop = 20)
+choice_3d <- substr(responses$Q3c_1, start = 98, stop = 128)
+
+# This is how we will do cross-tabs
+#exam_tab <- table(responses$Q3a_1[1:dim(responses)[1]], responses$Q3b[1:dim(responses)[1]])
+exam_tab_3d <- table(choice_3d, confidence_3d)
+print("Two by two table: ")
+exam_tab_3d
+
+# # https://www.youtube.com/watch?v=VGKz3Jkx-9I
+# # Row and column summaries of this
+# margin.table(exam_tab, 1)
+# margin.table(exam_tab, 2)
+# 
+# # Just display to the nearest hundredth
+# round(prop.table(exam_tab), 2)
+# # Percent of each row
+# round(prop.table(exam_tab, 1), 2)
+# # Percent of each column
+# round(prop.table(exam_tab, 2), 2)
+# 
+# # Sparse cells mean that approximations may be incorrect
+# chisq.test(exam_tab)
+
+vals_3d <- c(exam_tab_3d[1, 1], exam_tab_3d[1, 2], exam_tab_3d[1, 3] + exam_tab_3d[2, 3], exam_tab_3d[2, 2], exam_tab_3d[2, 1])
+lables_3d <- c("Decr WTP", "Pref WTP", "Nearly Equal", "Pref Budget", "Incr Budget")
+
+#hist(vals, breaks = 5)
+par(mfrow=c(1,1))
+barplot(vals_3d, main="Societal WTP vs Current Budget", 
+  	xlab="Strength of Agreement", names.arg = lables_3d, 
+  	ylab = "Number of Respondents")
+dev.off()
+
+dat_3d <- data.frame(Frequency = vals_3d,
+                  Action = gl(5, 1, labels = lables_3d))
+
+library(ggplot2)
+ggplot(dat_3d, aes(x = Action, y = Frequency)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("If a program is CE but not affordable, we should...") +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"))
+
+
+
+dat_3d <- data.frame(Frequency = c(vals_3d[1] + vals_3d[2], vals_3d[3], vals_3d[4] + vals_3d[5]),
+                  Action = gl(3, 1, labels = c("Decrease WTP", "Nearly Equal", "Increase Budget")))
+
+library(ggplot2)
+# graph2 <- ggplot(dat_3d, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+#   geom_bar(stat = "identity", fill = "#5182bc") +
+#   geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+#             vjust = -.5)+
+#   ggtitle("If a program is CE but not \n affordable, we should...") +
+#   scale_y_continuous(expand = c(0,0), lim = c(0, 72)) +
+#   theme_bw() + theme(panel.border = element_blank(), 
+#                      panel.grid.major = element_blank(), 
+#                      panel.grid.minor = element_blank(), 
+#                      axis.line = element_line(colour = "black"),
+#                      axis.title.x=element_blank(),
+#                      axis.title.y=element_blank(),
+#                      axis.text.y=element_blank(),
+#                      axis.ticks.y=element_blank(),
+#                      plot.title = element_text(size = 18, face = "bold"),
+#                      axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph2 <- ggplot(dat_3d, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5)+
+  ggtitle("If Drug X is CE but not \n affordable, we should...") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 72)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 18, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph2
+
+```
+
+```{r, echo = F, graph3, include = FALSE}
+summary(as.factor(num_form$Q1a))
+
+vals_1a <- c(63, 97, 10)
+lables_1a <- c("Should fund", "Unclear","Should not fund")
+
+# #hist(vals, breaks = 5)
+# par(mfrow=c(1,1))
+# barplot(vals_1a, main="Societal WTP vs Current Budget", 
+#   	xlab="Strength of Agreement", names.arg = lables_1a, 
+#   	ylab = "Number of Respondents")
+# dev.off()
+
+dat_1a <- data.frame(Frequency = vals_1a,
+                  Action = gl(3, 1, labels = lables_1a))
+
+library(ggplot2)
+graph3 <- ggplot(dat_1a, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("Evaluation of Drug X \n($40K/QALY) in academic paper") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 107)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     # plot.title = element_text(size = 28, face = "bold"),
+                     plot.title = element_text(size = 18, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph3
+```
+
+```{r, echo = F, graph4, include = FALSE}
+
+summary(as.factor(num_form$Q1c))
+
+vals_1c <- c(58, 21, 43, 48)
+lables_1c <- c("Fund for all", "Fund for some","Do not fund", "Other")
+
+# #hist(vals, breaks = 5)
+# par(mfrow=c(1,1))
+# barplot(vals_1c, main="Societal WTP vs Current Budget", 
+#   	xlab="Strength of Agreement", names.arg = lables_1c, 
+#   	ylab = "Number of Respondents")
+# dev.off()
+
+dat_1c <- data.frame(Frequency = vals_1c,
+                  Action = gl(4, 1, labels = lables_1c))
+
+library(ggplot2)
+graph4 <- ggplot(dat_1c, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("Adopt Drug X in Medicaid \n budget (20%)?") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 64)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     # plot.title = element_text(size = 28, face = "bold"),
+                     plot.title = element_text(size = 18, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph4
+```
+
+```{r}
+
+# More investigation into last threshold and justification
+
+# How do we get that 75/123 answered with solely convention? 
+summary(as.factor(responses$Q4b_4_Category))
+# Total is 123, and 75 had *only* convention (some people answere convention + Societal or Convention + Budget)
+
+# Why do we say that it is 22 who said societal, and why 11 for Budget, whereas an earlier draft said 25 and 14?
+# It's because the earlier draft was 3 higher because it was counting people who said *both*, but now we are presenting 
+# those 3 both societal and budget people separately
+
+22 / 123
+11 / 123
+
+summary(as.factor(threshold_string))
+# How many people said 1x GDP? (this denominator is larger, because more people selected multiple thresholds than multiple justification)
+38 + 3 + 1 + 1 + 12 + 2 # 57
+
+# How many people said 2x GDP?
+3 + 1 + 8 + 2 + 1 # 15
+
+# How many people said 3x GDP? 
+1 + 12 + 2 + 1 + 23 # 39
+
+# Empirical
+4
+
+# Institutional
+17
+
+# Total of 1x or 3x
+1 + 12 + 2 + 1 + 23 + 38 + 3 + 1 + 1 + 12 + 2 # 96
+
+# Total from this version
+sum(38, 3, 1, 1, 12, 2, 8, 2, 1, 23, 4, 17, 19) # Don't count the 39 who have never done a CEA, 131
+
+# This is where n = 17 comes from for Institutional and 4 for Empirical
+total_threshold = 131
+17 / total_threshold
+4 / total_threshold
+# earlier version said 97, true number is 96
+96 / total_threshold
+
+
+
+# Justifications
+summary(as.factor(responses$Q4b_4_Category))
+# Budget - 14, Convention 75, Non/Other - 12, Societal - 25
+
+sum(11, 75, 11, 1, 22, 3)
+
+
+```
+
+```{r, graph5, evaluate = FALSE, include = FALSE}
+
+summary(bottom_right_data_again$Threshold)
+
+# This doubles a threshold if there were two justifications
+# vals_threshold <- c(58, 15, 42, 6, 17)
+# This counts multiple thresholds independently, but doesn't "double weight" it if the respondent selected two justifications
+vals_threshold <- c(57, 15, 39, 4, 17)
+# Mainly just drops the shown percentage for Empirical from 4 to 3% and other potential slight changes
+
+lables_threshold <- c("1x GDP", "2x GDP \n (100K)", "3x+ GDP", "Empirical", "Institutional")
+
+# #hist(vals, breaks = 5)
+# par(mfrow=c(1,1))
+# barplot(vals_threshold, main="Societal WTP vs Current Budget", 
+#   	xlab="Strength of Agreement", names.arg = lables_threshold, 
+#   	ylab = "Number of Respondents")
+# dev.off()
+
+dat_threshold <- data.frame(Frequency = vals_threshold,
+                  Action = gl(5, 1, labels = lables_threshold))
+
+library(ggplot2)
+# graph5 <- ggplot(dat_1c, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+#   geom_bar(stat = "identity", fill = "#5182bc") +
+#   geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+#             vjust = -.5) +
+#   ggtitle("Last threshold used in an \n cost-effectiveness analysis") +
+#   scale_y_continuous(expand = c(0,0), lim = c(0, 65)) +
+#   theme_bw() + theme(panel.border = element_blank(), 
+#                      panel.grid.major = element_blank(), 
+#                      panel.grid.minor = element_blank(), 
+#                      axis.line = element_line(colour = "black"),
+#                      axis.title.x=element_blank(),
+#                      axis.title.y=element_blank(),
+#                      axis.text.y=element_blank(),
+#                      axis.ticks.y=element_blank(),
+#                      plot.title = element_text(size = 18, face = "bold"),
+#                      axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph5 <- ggplot(dat_threshold, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("Last threshold used in an \n cost-effectiveness analysis") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 65)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 18, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph5
+
+```
+
+```{r, graph6, evaluate = FALSE, include = FALSE}
+summary(bottom_right_data_again$Justification)
+
+vals_justification <- c(14, 75, 12, 25)
+# This is the larger number that doubles weights if a given justification was used for multiple thresholds
+# vals_justification <- c(17, 85, 26, 32)
+lables_justification <- c("Budget WTP", "Convention", "None/Other", "Societal WTP")
+
+# If you do it the other way of undoubling, then it is just 
+# Budget - 14, Convention 75, Non/Other - 12, Societal - 25
+# This means that 10 responses that had "convention" listed as justification had multiple thresholds used
+# Basically, it previously had "doubled" the weight of the justification if they picked two thresholds
+
+# #hist(vals, breaks = 5)
+# par(mfrow=c(1,1))
+# barplot(vals_justification, main="Societal WTP vs Current Budget", 
+#   	xlab="Strength of Agreement", names.arg = lables_justification, 
+#   	ylab = "Number of Respondents")
+# dev.off()
+
+dat_justification <- data.frame(Frequency = vals_justification,
+                  Action = gl(4, 1, labels = lables_justification))
+
+library(ggplot2)
+# graph6 <- ggplot(dat_1c, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+#   geom_bar(stat = "identity", fill = "#5182bc") +
+#   geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+#             vjust = -.5) +
+#   ggtitle("Justification for threshold choice") +
+#   scale_y_continuous(expand = c(0,0), lim = c(0, 93)) +
+#   theme_bw() + theme(panel.border = element_blank(), 
+#                      panel.grid.major = element_blank(), 
+#                      panel.grid.minor = element_blank(), 
+#                      axis.line = element_line(colour = "black"),
+#                      axis.title.x=element_blank(),
+#                      axis.title.y=element_blank(),
+#                      axis.text.y=element_blank(),
+#                      axis.ticks.y=element_blank(),
+#                      plot.title = element_text(size = 18, face = "bold"),
+#                      axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph6 <- ggplot(dat_justification, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("Justification for threshold choice") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 93)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 18, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75), face = "bold"))
+graph6
+
+```
+
+```{r, echo = F, multiplot, evaluate = FALSE, include = FALSE}
+library(ggplot2)
+
+# http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+multiplot(graph3, graph1, graph4, graph2, cols=2)
+
+multiplot(graph3, graph1, graph5, graph4, graph2, graph6, cols=2)
+
+```
+
+```{r, multiplot_three_rows, echo = FALSE}
+#multiplot(graph3, graph1, graph5, graph4, graph2, graph6, cols=2)
+
+multiplot(graph3, graph4, cols = 2)
+multiplot(graph1, graph2, cols = 2)
+multiplot(graph5, graph6, cols = 2)
+
+```
+
+```{r}
+
+summary(as.factor(num_form$Q5e))
+
+vals_1a <- c(38, 46, 24, 62)
+lables_1a <- c("0", "1-2", "3-4", "5+")
+
+dat_1a <- data.frame(Frequency = vals_1a,
+                  Action = gl(4, 1, labels = lables_1a))
+
+library(ggplot2)
+graphCEA <- ggplot(dat_1a, aes(x = Action, y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("Number of CEAs") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 65)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 28, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75)))
+graphCEA
+
+######
+
+summary(as.factor(num_form$Q5a))
+
+vals_1a <- c(13, 10, 39, 11, 23, 31, 43)
+lables_1a <- c("Government", "Industry", "Master's\nStudent", "Other", "PhD\nStudent", "Post-doc/\nScientist", "Professor")
+
+dat_1a <- data.frame(Frequency = vals_1a,
+                  Action = gl(7, 1, labels = lables_1a))
+
+library(ggplot2)
+graphPosition <- ggplot(dat_1a, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "#5182bc") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("Current Position") +
+  scale_y_continuous(expand = c(0,0), lim = c(0, 65)) +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 28, face = "bold"),
+                     axis.text.x=element_text(size=rel(1.75)))
+graphPosition
+
+multiplot(graphCEA, graphPosition, cols = 2)
+
+graphCEA
+graphPosition
+
+```
+
+
+# Table Version of Answers by Category of Respondent
+
+```{r, include = FALSE, eval = FALSE}
+
+dat_3b # Societal vs Budget WTP
+dat_3d # If CE but not affordable
+dat_1a # $40K/QALY evaluation
+dat_1c # Adopt Drug X in Medicaid budget
+dat_threshold # last threshold in CEA
+dat_justification # justification of threshold choice
+
+# c("Should fund", "Unclear","Should not fund")
+num_form$Q1a
+Q1a_short = rep(NA, 170)
+Q1a_short[which(num_form$Q1a == "In general, decision-makers should fund Drug X at current prices.")] = "Should fund"
+Q1a_short[which(num_form$Q1a == "In general, decision-makers should not fund Drug X at current prices.")] = "Should not fund"
+Q1a_short[which(num_form$Q1a == "It's unclear whether decision-makers should fund Drug X current prices.")] = "Unclear"
+summary(as.factor(Q1a_short))
+num_form$Q1a_short = as.factor(Q1a_short)
+
+summary(as.factor(num_form$Q1a_short[which(num_form$Q5a == "Professor")]))
+summary(num_form[, 63])
+
+summary(num_form[which(num_form$Q5a == "Professor"), 63])
+
+# Take a given column, then calculate the specific percentages by subcategory
+
+
+# Country focus
+cf_combo <- length(num_form[which(num_form$CountryFocus == "A combination of both"), 63])
+cf_hic <- length(num_form[which(num_form$CountryFocus == "High-income countries"), 63])
+cf_lmic <- length(num_form[which(num_form$CountryFocus == "Low- and middle-income countries"), 63])
+
+cf_combo_fund <- length(which(num_form[which(num_form$CountryFocus == "A combination of both"), 63] == "Should fund"))
+cf_combo_nofund <- length(which(num_form[which(num_form$CountryFocus == "A combination of both"), 63] == "Should not fund"))
+cf_combo_unclear <- length(which(num_form[which(num_form$CountryFocus == "A combination of both"), 63] == "Unclear"))
+cf_hic_fund <- length(which(num_form[which(num_form$CountryFocus == "High-income countries"), 63] == "Should fund"))
+cf_hic_nofund <- length(which(num_form[which(num_form$CountryFocus == "High-income countries"), 63] == "Should not fund"))
+cf_hic_unclear <- length(which(num_form[which(num_form$CountryFocus == "High-income countries"), 63] == "Unclear"))
+cf_lmic_fund <- length(which(num_form[which(num_form$CountryFocus == "Low- and middle-income countries"), 63] == "Should fund"))
+cf_lmic_nofund <- length(which(num_form[which(num_form$CountryFocus == "Low- and middle-income countries"), 63] == "Should not fund"))
+cf_lmic_unclear <- length(which(num_form[which(num_form$CountryFocus == "Low- and middle-income countries"), 63] == "Unclear"))
+
+paste(cf_lmic_unclear, ", ", 100*round(cf_lmic_unclear / (cf_lmic_unclear + cf_lmic_fund + cf_lmic_nofund), 2), "%", sep = "")
+paste(100*round(cf_lmic_unclear / (cf_lmic_unclear + cf_lmic_fund + cf_lmic_nofund), 2), "% (", cf_lmic_unclear, ")", sep = "")
+
+```
+
+```{r}
+
+# Just one of them at a time
+result1 = "Should fund"
+result2 = "Should not fund"
+result3 = "Unclear"
+result4 = "NA"
+
+group1 = "Low- and middle-income countries"
+group2 = "High-income countries"
+group3 = "A combination of both"
+group4 = "NA"
+
+group1_result1 <- length(which(num_form[which(num_form$CountryFocus == group1), 63] == result1))
+group1_result2 <- length(which(num_form[which(num_form$CountryFocus == group1), 63] == result2))
+group1_result3 <- length(which(num_form[which(num_form$CountryFocus == group1), 63] == result3))
+group1_result4 <- length(which(num_form[which(num_form$CountryFocus == group1), 63] == result4))
+group2_result1 <- length(which(num_form[which(num_form$CountryFocus == group2), 63] == result1))
+group2_result2 <- length(which(num_form[which(num_form$CountryFocus == group2), 63] == result2))
+group2_result3 <- length(which(num_form[which(num_form$CountryFocus == group2), 63] == result3))
+group2_result4 <- length(which(num_form[which(num_form$CountryFocus == group2), 63] == result4))
+group3_result1 <- length(which(num_form[which(num_form$CountryFocus == group3), 63] == result1))
+group3_result2 <- length(which(num_form[which(num_form$CountryFocus == group3), 63] == result2))
+group3_result3 <- length(which(num_form[which(num_form$CountryFocus == group3), 63] == result3))
+group3_result4 <- length(which(num_form[which(num_form$CountryFocus == group3), 63] == result4))
+group4_result1 <- length(which(num_form[which(num_form$CountryFocus == group4), 63] == result1))
+group4_result2 <- length(which(num_form[which(num_form$CountryFocus == group4), 63] == result2))
+group4_result3 <- length(which(num_form[which(num_form$CountryFocus == group4), 63] == result3))
+group4_result4 <- length(which(num_form[which(num_form$CountryFocus == group4), 63] == result4))
+
+# Generate something that will be displayed later
+display11 <- paste(100*round(group1_result1 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result1, ")", sep = "")
+display12 <- paste(100*round(group1_result2 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result2, ")", sep = "")
+display13 <- paste(100*round(group1_result3 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result3, ")", sep = "")
+display14 <- paste(100*round(group1_result4 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result4, ")", sep = "")
+display21 <- paste(100*round(group2_result1 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result1, ")", sep = "")
+display22 <- paste(100*round(group2_result2 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result2, ")", sep = "")
+display23 <- paste(100*round(group2_result3 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result3, ")", sep = "")
+display24 <- paste(100*round(group2_result4 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result4, ")", sep = "")
+display31 <- paste(100*round(group3_result1 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result1, ")", sep = "")
+display32 <- paste(100*round(group3_result2 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result2, ")", sep = "")
+display33 <- paste(100*round(group3_result3 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result3, ")", sep = "")
+display34 <- paste(100*round(group3_result4 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result4, ")", sep = "")
+display41 <- paste(100*round(group4_result1 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result1, ")", sep = "")
+display42 <- paste(100*round(group4_result2 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result2, ")", sep = "")
+display43 <- paste(100*round(group4_result3 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result3, ")", sep = "")
+display44 <- paste(100*round(group4_result4 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result4, ")", sep = "")
+
+mat1 <- matrix(c(display11, display12, display13, display14,
+       display21, display22, display23, display24,
+       display31, display32, display33, display34,
+       display41, display42, display43, display44),
+       nrow = 4, byrow = TRUE)
+
+```
+
+```{r}
+
+# For the category label it is in "num_form_dropped" because we drop the irrational rows
+# So if I just merge that back onto the "num_form" and just leave it as NA for those that were irrational
+just_label <- num_form_dropped[ , which(names(num_form_dropped) %in% c("ResponseId", "Category_Label"))]
+
+dim(num_form)
+num_form <- merge(num_form, just_label, by = "ResponseId", all.x = TRUE)
+dim(num_form)
+
+```
+
+```{r}
+
+confidence_3b <- substr(responses$Q3b, start = 1, stop = 20)
+choice_3b <- substr(responses$Q3a_1, start = 69, stop = 100)
+
+# # If confidence is low, then replace the choice with "Ambivalent"
+wtp_reflect <- rep("Societal WTP", 170)
+for (i in c(1:170)){
+  if (choice_3b[i] == "reflect the current budget, i.e.") {
+    wtp_reflect[i] = "Budget WTP"
+  }
+  
+  # Now, if they said they weren't confident, then change to "Ambivalent" whether they said Societal or Budget WTP
+  if (confidence_3b[i] == "Felt nearly equal ab") {
+    wtp_reflect[i] = "Ambivalent"
+  }
+}
+summary(as.factor(wtp_reflect))
+
+num_form$wtp_reflect <- as.factor(wtp_reflect)
+summary(num_form$wtp_reflect)
+
+```
+
+```{r}
+confidence_3d <- substr(responses$Q3d, start = 1, stop = 20)
+choice_3d <- substr(responses$Q3c_1, start = 98, stop = 128)
+
+# # If confidence is low, then replace the choice with "Ambivalent"
+ce_unaffordable <- rep("Increase Budget", 170)
+for (i in c(1:170)){
+  if (choice_3d[i] == "decrease the willingness to pay") {
+    ce_unaffordable[i] = "Decrease WTP"
+  }
+  
+  # Now, if they said they weren't confident, then change to "Ambivalent" whether they said Increase budget or Decrease WTP
+  if (confidence_3d[i] == "Felt nearly equal ab") {
+    ce_unaffordable[i] = "Nearly Equal"
+  }
+}
+summary(as.factor(ce_unaffordable))
+
+num_form$ce_unaffordable <- as.factor(ce_unaffordable)
+summary(num_form$ce_unaffordable)
+
+
+```
+
+```{r, eval = FALSE}
+
+# 
+p_values <- c()
+
+# Automate it a bit so it'll be easier down the road
+
+result_column = data.frame(matrix(NA, nrow = 33, ncol = 1))
+
+for (round in c(1:4)){
+  print(round)
+  
+  if (round == 1){
+    result1 = "Should fund"
+    result2 = "Should not fund"
+    result3 = "Unclear"
+    result4 = "NA"
+  } else if (round == 2) {
+      result1 = "Fund Drug X for all eligible patients."
+      result2 = "Only fund Drug X for half of the eligible population (chosen at random) to reduce budget impact concerns."
+      result3 = "Refuse to fund Drug X at its current price. Wait for a lower price or competitors."
+      result4 = "Other"
+  } else if (round == 3) {
+      result1 = "Budget WTP"
+      result2 = "Societal WTP"
+      result3 = "Ambivalent"
+      result4 = "NA"
+  } else if (round == 4) {
+      result1 = "Increase Budget"
+      result2 = "Decrease WTP"
+      result3 = "Nearly Equal"
+      result4 = "NA"
+  }
+
+
+# result1 = "Should fund"
+# result2 = "Should not fund"
+# result3 = "Unclear"
+# result4 = "NA"
+
+# result1 = "Fund Drug X for all eligible patients."
+# result2 = "Only fund Drug X for half of the eligible population (chosen at random) to reduce budget impact concerns."
+# result3 = "Refuse to fund Drug X at its current price. Wait for a lower price or competitors."
+# result4 = "Other"
+
+# result1 = "Budget WTP"
+# result2 = "Societal WTP"
+# result3 = "Ambivalent"
+# result4 = "NA"
+
+# result1 = "Increase Budget"
+# result2 = "Decrease WTP"
+# result3 = "Nearly Equal"
+# result4 = "NA"
+
+# Just used as a test to make sure the below chunk of code worked, never do this one here
+## result1 = "Convention"
+## result2 = "Societal WTP"
+## result3 = "Budget WTP"
+## result4 = "None/Other"
+
+
+# columns_of_interest
+# Country focus, current position, gender, age, years experience, number of CEA
+which(names(num_form) %in% c("Q4c", "Q5a", "Q5b", "Q5c", "Q5d", "Q5e"))
+
+which(names(num_form) %in% c("CountryFocus", "Position"))
+
+# group1 = "Low- and middle-income countries"
+# group2 = "High-income countries"
+# group3 = "A combination of both"
+# group4 = "NA"
+
+summary(as.factor(num_form$NumCEA))
+
+group1_opts = c("Hard ICER Hawk", "Low- and middle-income countries", "Academic", "Professor", "Female", "<1", "<25", "1+")
+group2_opts = c("Soft ICER Hawk", "A combination of both", "Government", "Master's Student", "Other", "5-Jan", "25-40", "0")
+group3_opts = c("Budget Hawk", "Low- and middle-income countries", "Industry", "PhD Student", "NA", "6+", "40-60", "NA")
+group4_opts = c("Moderate", "NA", "Other", "Post-doc/Research scientist", "NA", "NA", "60+", "NA")
+
+which(names(num_form) %in% c("CountryFocus", "Position", "Q5a", "Gender", "YrsExperience", "Q5c", "Category_Label", "NumCEA"))
+col_of_interest = c(64, 59, 61, 46, 60, 57, 50, 58)
+names(num_form)[col_of_interest]
+
+which(names(num_form) %in% c("Q4b_4_Category"))
+result_col_list = c(63, 16, 65, 66, 44)
+names(num_form)[result_col_list]
+
+# which(num_form[,61] == "Industry")
+
+for (i in c(1:8)){
+  
+  group1 = group1_opts[i]
+  group2 = group2_opts[i]
+  group3 = group3_opts[i]
+  group4 = group4_opts[i]
+  
+  one_col = col_of_interest[i]
+  # result_col = 63
+  # result_col = 16
+  result_col = result_col_list[round]
+
+  group1_result1 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result1))
+  group1_result2 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result2))
+  group1_result3 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result3))
+  group1_result4 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result4))
+  group2_result1 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result1))
+  group2_result2 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result2))
+  group2_result3 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result3))
+  group2_result4 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result4))
+  group3_result1 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result1))
+  group3_result2 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result2))
+  group3_result3 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result3))
+  group3_result4 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result4))
+  group4_result1 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result1))
+  group4_result2 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result2))
+  group4_result3 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result3))
+  group4_result4 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result4))
+  
+  # NOW GET THESE IN A FORM I CAN JUST PLUG IN
+  display11 <- paste(100*round(group1_result1 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result1, ")", sep = "")
+  display12 <- paste(100*round(group1_result2 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result2, ")", sep = "")
+  display13 <- paste(100*round(group1_result3 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result3, ")", sep = "")
+  display14 <- paste(100*round(group1_result4 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result4, ")", sep = "")
+  display21 <- paste(100*round(group2_result1 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result1, ")", sep = "")
+  display22 <- paste(100*round(group2_result2 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result2, ")", sep = "")
+  display23 <- paste(100*round(group2_result3 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result3, ")", sep = "")
+  display24 <- paste(100*round(group2_result4 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result4, ")", sep = "")
+  display31 <- paste(100*round(group3_result1 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result1, ")", sep = "")
+  display32 <- paste(100*round(group3_result2 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result2, ")", sep = "")
+  display33 <- paste(100*round(group3_result3 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result3, ")", sep = "")
+  display34 <- paste(100*round(group3_result4 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result4, ")", sep = "")
+  display41 <- paste(100*round(group4_result1 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result1, ")", sep = "")
+  display42 <- paste(100*round(group4_result2 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result2, ")", sep = "")
+  display43 <- paste(100*round(group4_result3 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result3, ")", sep = "")
+  display44 <- paste(100*round(group4_result4 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result4, ")", sep = "")
+
+  
+  # TODO - figure out how to do "overall" here, how the breakdown is for everybody regardless of category
+  
+  mat_name = paste("matrix", i, sep = "")
+  # assign(mat_name, matrix(c(display11, display12, display13, display14,
+  #        display21, display22, display23, display24,
+  #        display31, display32, display33, display34,
+  #        display41, display42, display43, display44),
+  #        nrow = 4, byrow = TRUE))
+  assign(mat_name, matrix(c(group1_result1, group1_result2, group1_result3, group1_result4,
+         group2_result1, group2_result2, group2_result3, group2_result4,
+         group3_result1, group3_result2, group3_result3, group3_result4,
+         group4_result1, group4_result2, group4_result3, group4_result4),
+         nrow = 4, byrow = TRUE))
+  # print(mat_name)
+  
+  # Test if significant
+  full_mat <- matrix(c(group1_result1, group1_result2, group1_result3, group1_result4,
+         group2_result1, group2_result2, group2_result3, group2_result4,
+         group3_result1, group3_result2, group3_result3, group3_result4,
+         group4_result1, group4_result2, group4_result3, group4_result4),
+         nrow = 4, byrow = TRUE)
+  
+  # print(full_mat)
+  
+  for (check_i in c(dim(full_mat)[2]:1)){
+    if(sum(full_mat[, check_i]) == 0){
+      full_mat <- full_mat[, - check_i]
+    }
+  }
+  for (check_i in c(dim(full_mat)[1]:1)){
+    if(sum(full_mat[check_i , ]) == 0){
+      full_mat <- full_mat[- check_i, ]
+    }
+  }
+  
+  # print(full_mat)
+  
+  sig_check <- chisq.test(full_mat)
+  # sig_check <- fisher.test(full_mat)
+  # sig_check <- fisher.test(full_mat, workspace = 2e8)
+  # print(sig_check)
+  if (sig_check$p.value < 0.05){
+    print("Significant")
+    print(full_mat)
+    print(paste(round, result1))
+    print(paste(i, group1))
+    # print(round)
+  }
+  # print(sig_check$p.value)
+  p_values <- c(p_values, sig_check$p.value)
+
+}
+
+result1_total <- length(which(num_form[ , result_col] == result1))
+result2_total <- length(which(num_form[ , result_col] == result2))
+result3_total <- length(which(num_form[ , result_col] == result3))
+result4_total <- length(which(num_form[ , result_col] == result4))
+display1 <- paste(100*round(result1_total / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result1_total, ")", sep = "")
+display2 <- paste(100*round(result2_total / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result2_total, ")", sep = "")
+display3 <- paste(100*round(result3_total / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result3_total, ")", sep = "")
+display4 <- paste(100*round(result4_total / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result4_total, ")", sep = "")
+
+# print(round)
+# mat_together_name = paste("matrix_together_", round, sep = "")
+
+temp_results <- data.frame(rbind(c(display1, display2, display3, display4), matrix1, matrix2, matrix3, matrix4, matrix5, matrix6, matrix7, matrix8))
+print(dim(temp_results))
+
+result_column <- cbind(result_column, temp_results)
+
+# assign(mat_together_name, data.frame(rbind(c(display1, display2, display3, display4), matrix1, matrix2, matrix3, matrix4, matrix5, matrix6, matrix7)))
+
+# matrix_together <- data.frame(rbind(c(display1, display2, display3, display4), matrix1, matrix2, matrix3, matrix4, matrix5, matrix6, matrix7))
+
+}
+
+result_column <- result_column[ , -1]
+dim(result_column)
+
+```
+
+
+```{r}
+example <- matrix(c(16, 0, 27,
+                    21, 5, 13,
+                    7, 1, 15,
+                    7, 2, 22),
+                  nrow = 4, 
+                  byrow = TRUE)
+
+chisq.test(example)
+
+library(stats)
+fisher.test(example)
+
+example <- matrix(c(16, 0, 27,
+                    21, 5, 13,
+                    7, 1, 15,
+                    7, 2, 22),
+                  nrow = 4, 
+                  byrow = TRUE)
+example <- matrix(c(16, 27,
+                    21, 18,
+                    7, 16,
+                    7, 24),
+                  nrow = 4, 
+                  byrow = TRUE)
+sig_check <- fisher.test(example, workspace = 2e8)
+sig_check <- chisq.test(example)
+sig_check$expected
+
+
+a <- chisq.test(matrix(c(21, 22, 3,
+                    16, 20, 15,
+                    35, 28, 10),
+                  nrow = 3, 
+                  byrow = TRUE))
+a$expected
+a$p.value
+
+a <- fisher.test(matrix(c(21, 22, 3,
+                    16, 20, 15,
+                    35, 28, 10),
+                  nrow = 3, 
+                  byrow = TRUE))
+
+icer_collapsed <- matrix(c(27, 11,
+                           7, 40,
+                           6, 27,
+                           10, 16),
+                         nrow = 4,
+                         byrow = TRUE)
+fisher.test(icer_collapsed)
+chisq.test(icer_collapsed)
+
+within_academia_collapsed <- matrix(c(16, 27,
+                                      21, 18,
+                                      7, 16,
+                                      7, 24), 
+                                    nrow = 4,
+                                    byrow = TRUE)
+fisher.test(within_academia_collapsed)
+chisq.test(within_academia_collapsed)
+
+
+```
+
+
+```{r}
+
+total_col <- c()
+
+# Making the "Total" column
+group1_opts = c("Hard ICER Hawk", "Low- and middle-income countries", "Academic", "Professor", "Female", "<1", "<25", "1+")
+group2_opts = c("Soft ICER Hawk", "A combination of both", "Government", "Master's Student", "Other", "5-Jan", "25-40", "0")
+group3_opts = c("Budget Hawk", "Low- and middle-income countries", "Industry", "PhD Student", "NA", "6+", "40-60", "NA")
+group4_opts = c("Moderate", "NA", "Other", "Post-doc/Research scientist", "NA", "NA", "60+", "NA")
+col_of_interest = c(64, 59, 61, 46, 60, 57, 50, 58)
+
+for (i in c(1:8)){
+  
+  group1 = group1_opts[i]
+  group2 = group2_opts[i]
+  group3 = group3_opts[i]
+  group4 = group4_opts[i]
+  one_col = col_of_interest[i]
+  
+  group1 <- length(which(num_form[ , one_col] == group1))
+  group2 <- length(which(num_form[ , one_col] == group2))
+  group3 <- length(which(num_form[ , one_col] == group3))
+  group4 <- length(which(num_form[ , one_col] == group4))
+  
+  # NOW GET THESE IN A FORM I CAN JUST PLUG IN
+  display1 <- paste(100*round(group1 / (group1 + group2 + group3 + group4), 2), "% (", group1, ")", sep = "")
+  display2 <- paste(100*round(group2 / (group1 + group2 + group3 + group4), 2), "% (", group2, ")", sep = "")
+  display3 <- paste(100*round(group3 / (group1 + group2 + group3 + group4), 2), "% (", group3, ")", sep = "")
+  display4 <- paste(100*round(group4 / (group1 + group2 + group3 + group4), 2), "% (", group4, ")", sep = "")
+
+  total_col <- c(total_col, display1, display2, display3, display4, "")
+  
+}
+
+total_col
+
+
+
+```
+
+# Table form for justification
+
+```{r}
+
+
+result1 = "Convention"
+result2 = "Societal WTP"
+result3 = "Budget WTP"
+result4 = "None/Other"
+result5 = "Societal WTP, Budget WTP"
+
+group1_opts = c("Hard ICER Hawk", "Low- and middle-income countries", "Academic", "Professor", "Female", "<1", "<25")
+group2_opts = c("Soft ICER Hawk", "A combination of both", "Government", "Master's Student", "Other", "5-Jan", "25-40")
+group3_opts = c("Budget Hawk", "Low- and middle-income countries", "Industry", "PhD Student", "NA", "6+", "40-60")
+group4_opts = c("Moderate", "NA", "Other", "Post-doc/Research scientist", "NA", "NA", "60+")
+
+which(names(num_form) %in% c("CountryFocus", "Position", "Q5a", "Gender", "YrsExperience", "Q5c", "Category_Label"))
+col_of_interest = c(64, 59, 61, 46, 60, 57, 50)
+names(num_form)[col_of_interest]
+
+which(names(num_form) %in% c("Q4b_4_Category"))
+result_col_list = c(63, 16, 65, 66, 44)
+names(num_form)[result_col_list]
+
+# which(num_form[,61] == "Industry")
+
+for (i in c(1:7)){
+  
+  group1 = group1_opts[i]
+  group2 = group2_opts[i]
+  group3 = group3_opts[i]
+  group4 = group4_opts[i]
+  
+  one_col = col_of_interest[i]
+  # result_col = 63
+  # result_col = 16
+  result_col = result_col_list[5]
+
+  group1_result1 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result1))
+  group1_result2 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result2))
+  group1_result3 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result3))
+  group1_result4 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result4))
+  group1_result5 <- length(which(num_form[which(num_form[ , one_col] == group1), result_col] == result5))
+  group2_result1 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result1))
+  group2_result2 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result2))
+  group2_result3 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result3))
+  group2_result4 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result4))
+  group2_result5 <- length(which(num_form[which(num_form[ , one_col] == group2), result_col] == result5))
+  group3_result1 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result1))
+  group3_result2 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result2))
+  group3_result3 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result3))
+  group3_result4 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result4))
+  group3_result5 <- length(which(num_form[which(num_form[ , one_col] == group3), result_col] == result5))
+  group4_result1 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result1))
+  group4_result2 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result2))
+  group4_result3 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result3))
+  group4_result4 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result4))
+  group4_result5 <- length(which(num_form[which(num_form[ , one_col] == group4), result_col] == result5))
+  
+  # NOW GET THESE IN A FORM I CAN JUST PLUG IN
+  display11 <- paste(100*round(group1_result1 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result1, ")", sep = "")
+  display12 <- paste(100*round((group1_result2 + group1_result5) / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result2 + group1_result5, ")", sep = "")
+  display13 <- paste(100*round((group1_result3 + group1_result5) / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result3 + group1_result5, ")", sep = "")
+  display14 <- paste(100*round(group1_result4 / (group1_result1 + group1_result2 + group1_result3 + group1_result4), 2), "% (", group1_result4, ")", sep = "")
+  display21 <- paste(100*round(group2_result1 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result1, ")", sep = "")
+  display22 <- paste(100*round((group2_result2 + group2_result5) / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result2 + group2_result5, ")", sep = "")
+  display23 <- paste(100*round((group2_result3 + group2_result5) / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result3 + group2_result5, ")", sep = "")
+  display24 <- paste(100*round(group2_result4 / (group2_result1 + group2_result2 + group2_result3 + group2_result4), 2), "% (", group2_result4, ")", sep = "")
+  display31 <- paste(100*round(group3_result1 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result1, ")", sep = "")
+  display32 <- paste(100*round((group3_result2 + group3_result5) / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result2 + group3_result5, ")", sep = "")
+  display33 <- paste(100*round((group3_result3 + group3_result5) / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result3 + group3_result5, ")", sep = "")
+  display34 <- paste(100*round(group3_result4 / (group3_result1 + group3_result2 + group3_result3 + group3_result4), 2), "% (", group3_result4, ")", sep = "")
+  display41 <- paste(100*round(group4_result1 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result1, ")", sep = "")
+  display42 <- paste(100*round((group4_result2 + group4_result5) / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result2 + group4_result5, ")", sep = "")
+  display43 <- paste(100*round((group4_result3 + group4_result5) / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result3 + group4_result5, ")", sep = "")
+  display44 <- paste(100*round(group4_result4 / (group4_result1 + group4_result2 + group4_result3 + group4_result4), 2), "% (", group4_result4, ")", sep = "")
+
+  mat_name = paste("matrix", i, sep = "")
+  assign(mat_name, matrix(c(display11, display12, display13, display14,
+         display21, display22, display23, display24,
+         display31, display32, display33, display34,
+         display41, display42, display43, display44),
+         nrow = 4, byrow = TRUE))
+}
+
+result1_total <- length(which(num_form[ , result_col] == result1))
+result2_total <- length(which(num_form[ , result_col] == result2))
+result3_total <- length(which(num_form[ , result_col] == result3))
+result4_total <- length(which(num_form[ , result_col] == result4))
+result5_total <- length(which(num_form[ , result_col] == result5))
+display1 <- paste(100*round(result1_total / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result1_total, ")", sep = "")
+display2 <- paste(100*round((result2_total + result5_total) / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result2_total + result5_total, ")", sep = "")
+display3 <- paste(100*round((result3_total + result5_total) / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result3_total + result5_total, ")", sep = "")
+display4 <- paste(100*round(result4_total / (result1_total + result2_total + result3_total + result4_total), 2), "% (", result4_total, ")", sep = "")
+
+
+matrix_together <- data.frame(rbind(c(display1, display2, display3, display4), matrix1, matrix2, matrix3, matrix4, matrix5, matrix6, matrix7))
+
+```
+
+# Additional Work on Four Categories
+
+```{r, include = FALSE, eval = FALSE}
+
+library(reshape2)
+library(plyr)
+library(ggplot2)
+
+num_form_dropped$Category_Label <- factor(num_form_dropped$Category_Label, levels = c("Hard ICER Hawk", "Soft ICER Hawk", "Moderate", "Budget Hawk"))
+
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$Age), 2)
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$YrsExperience), 2)
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$NumCEA), 2)
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$CountryFocus), 2)
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$Gender), 2)
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$Position), 2)
+prop.table(table(num_form_dropped$Category_Label, num_form_dropped$Masters), 2)
+
+summary(num_form_dropped$Category_Label)
+
+sex.per.status <- ddply(num_form_dropped,~Age + Category_Label,nrow)
+sex.per.status
+
+sex.per.status$V1 / sum(sex.per.status$V1)
+
+# Proportion is probably important here too. 
+ggplot(ddply(num_form_dropped,~Age + Category_Label,nrow), aes(x = Age, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+ggplot(ddply(num_form_dropped,~YrsExperience + Category_Label,nrow), aes(x = YrsExperience, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+ggplot(ddply(num_form_dropped,~NumCEA + Category_Label,nrow), aes(x = NumCEA, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+ggplot(ddply(num_form_dropped,~CountryFocus + Category_Label,nrow), aes(x = CountryFocus, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+ggplot(ddply(num_form_dropped,~Gender + Category_Label,nrow), aes(x = Gender, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+ggplot(ddply(num_form_dropped,~Position + Category_Label,nrow), aes(x = Position, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+ggplot(ddply(num_form_dropped,~Masters + Category_Label,nrow), aes(x = Masters, y = V1, fill = Category_Label, label = V1)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+
+# Regression Models
+# Starting with Multinomial Logistic Regression
+library(foreign)
+library(nnet)
+library(ggplot2)
+library(reshape2)
+
+# Hard ICER Hawk is the Reference Level
+# Nothing appears significant in the unstandardized format (one predictor variable at a time)
+
+# Age
+test <- multinom(Category_Label ~ Age, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+p <- (1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+p
+
+# YrsExperience
+test <- multinom(Category_Label ~ YrsExperience, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+# NumCEA
+test <- multinom(Category_Label ~ NumCEA, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+# CountryFocus
+test <- multinom(Category_Label ~ CountryFocus, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+# Gender
+test <- multinom(Category_Label ~ Gender, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+# Position
+test <- multinom(Category_Label ~ Position, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+# Masters
+test <- multinom(Category_Label ~ Masters, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+
+# Gender OTHER and Moderate is significantly different from Gender OTHER and Hard ICER Hawk, p = 0.045. This is hardly beneath 0.05, however. 
+
+# Multinomial Logistic Regression with All Predictors
+test <- multinom(Category_Label ~ Age + YrsExperience + NumCEA + CountryFocus + Gender + Position + Masters, data = num_form_dropped)
+summary(test)
+# test statistics
+summary(test)$coefficients/summary(test)$standard.errors
+# p-values
+(1 - pnorm(abs(summary(test)$coefficients/summary(test)$standard.errors), 0, 1)) * 2
+
+
+
+# Ordinal Logistic Regression
+# install.packages("MASS")
+# proportional odds logistic regression
+library(MASS)
+
+# Age
+summary(polr(Category_Label ~ Age, data = num_form_dropped, Hess=TRUE))
+
+# YrsExperience
+summary(polr(Category_Label ~ YrsExperience, data = num_form_dropped, Hess=TRUE))
+
+# NumCEA
+summary(polr(Category_Label ~ NumCEA, data = num_form_dropped, Hess=TRUE))
+
+# CountryFocus
+summary(polr(Category_Label ~ CountryFocus, data = num_form_dropped, Hess=TRUE))
+# LMIC is t-value 1.90. This is not significant, but close. 
+
+# Gender
+summary(polr(Category_Label ~ Gender, data = num_form_dropped, Hess=TRUE))
+
+# Position
+summary(polr(Category_Label ~ Position, data = num_form_dropped, Hess=TRUE))
+
+# Masters
+summary(polr(Category_Label ~ Masters, data = num_form_dropped, Hess=TRUE))
+
+# All Variables Together
+summary(polr(Category_Label ~ Age + YrsExperience + NumCEA + CountryFocus + Gender + Position + Masters, data = num_form_dropped, Hess=TRUE))
+# No t-statistics above 1.96, so no significant variables. Closest is country-focusLow-and middle-income with 1.82
+
+# Many variables, expected high correlations removed
+
+# Age and NumCEA are expected to be highly correlated with YrsExperience;
+# Masters is related strongly to Position, so is removed
+summary(polr(Category_Label ~ YrsExperience + CountryFocus + Gender + Position, data = num_form_dropped, Hess=TRUE))
+# Now, LMIC is t-stat above 2.00. This corresponds with a p-value beneath 0.05
+
+ggplot(num_form_dropped, aes(x=num_form_dropped$Category_Label, y=num_form_dropped$CountryFocus))
+
+plot(x,y,pch=16)
+
+# Year      <- c(rep(c("2006-07", "2007-08", "2008-09", "2009-10"), each = 4))
+# Category  <- c(rep(c("A", "B", "C", "D"), times = 4))
+# Frequency <- c(168, 259, 226, 340, 216, 431, 319, 368, 423, 645, 234, 685, 166, 467, 274, 251)
+# Data      <- data.frame(Year, Category, Frequency)
+# library(ggplot2)
+# p <- qplot(Year, Frequency, data = Data, geom = "bar", fill = Category,     theme_set(theme_bw()))
+# p + geom_text(aes(label = Frequency), size = 3, hjust = 0.5, vjust = 3, position =     "stack") 
+# 
+# ggplot(Data, aes(x = Year, y = Frequency, fill = Category, label = Frequency)) +
+#   geom_bar(stat = "identity") +
+#   geom_text(size = 3, position = position_stack(vjust = 0.5))
+
+```
+
+
+```{r, include = FALSE, eval = FALSE}
+
+vals_3b[order(vals_3b[,2], decreasing=T),]
+
+vals_3b[c(1:3), c("Budget Hawk")]
+
+vals_3b[c("Budget Hawk"), c(1:3)]
+
+vals_3b[2,2]
+
+pw.vals_3b[c(1:3), c("Budget Hawk")]
+
+
+
+
+
+
+
+
+vals_3b <- table(num_form_dropped$Category_Label, num_form_dropped$Age)
+barplot(vals_3b, main="Societal WTP vs Current Budget", 
+  	xlab="Strength of Agreement", 
+  	ylab = "Number of Respondents")
+
+legend("topleft",
+       c("Hard ICER Hawk", "Soft ICER Hawk", "Moderate", "Budget Hawk")
+)
+
+vals_3b <- c(exam_tab_3b[1, 1], exam_tab_3b[1, 2], exam_tab_3b[1, 3] + exam_tab_3b[2, 3], exam_tab_3b[2, 2], exam_tab_3b[2, 1])
+lables_3b <- c("Completely WTP", "Preference", "Nearly Equal", "Preference2", "Completely Budget")
+
+#hist(vals, breaks = 5)
+
+barplot(vals_3b, main="Societal WTP vs Current Budget", 
+  	xlab="Strength of Agreement", names.arg = lables_3b, 
+  	ylab = "Number of Respondents")
+
+dat_3b <- data.frame(Frequency = vals_3b,
+                  Action = gl(5, 1, labels = lables_3b))
+
+library(ggplot2)
+ggplot(dat_3b, aes(x = Action, y = Frequency)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5) +
+  ggtitle("The willingness to pay threshold should reflect...") +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"))
+
+
+
+dat_3b <- data.frame(Frequency = c(vals_3b[1] + vals_3b[2], vals_3b[3], vals_3b[4] + vals_3b[5]),
+                  Action = gl(3, 1, labels = c("Societal WTP", "Ambivalent", "Budget WTP")))
+
+library(ggplot2)
+graph1 <- ggplot(dat_3b, aes(x = reorder(Action, -Frequency), y = Frequency)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.0f%%", Frequency/sum(Frequency) * 100)), 
+            vjust = -.5)+
+  ggtitle("The willingness to pay threshold \n should reflect:") +
+  theme_bw() + theme(panel.border = element_blank(), 
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     axis.title.x=element_blank(),
+                     axis.title.y=element_blank(),
+                     axis.text.y=element_blank(),
+                     axis.ticks.y=element_blank(),
+                     plot.title = element_text(size = 24),
+                     axis.text.x=element_text(size=rel(1.5)))
+graph1
+
+```
+
+```{r, eval = FALSE, include = FALSE}
+
+# Double check positive or negative: are female more or less likely to recommend drug X in an academic paper? To a policymaker?
+summary(responses$Gender)
+summary(as.factor(responses$Q1a))
+summary(as.factor(responses$Q1c))
+
+table(responses$Gender, responses$Q1a)
+prop.table(table(responses$Gender, responses$Q1a), margin = 1)
+
+table(responses$Gender, responses$Q1c)
+prop.table(table(responses$Gender, responses$Q1c), margin = 1)
+
+# Females are MORE LIKELY to FUND
+# If Female is the reference category, then the estimates for "Male or other" category should be NEGATIVE for predicting whether to fund
+# If Male or other is the reference category, then the estimate for Female should be POSITIVE for predicting whether to fund
+
+
+```

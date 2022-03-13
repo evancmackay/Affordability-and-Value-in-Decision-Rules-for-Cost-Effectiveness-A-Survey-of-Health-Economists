@@ -1,0 +1,1663 @@
+---
+title: 'Costly Disagreements: A Survey of Researchers on Cost-Effectiveness and Affordability:
+  Supplement 1'
+toc: yes
+author: "Alyssa Bilinski, Evan MacKay, Joshua Salomon, Ankur Pandya"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+header-includes:
+  - \usepackage{lscape}
+  - \usepackage [english]{babel}
+  - \usepackage [autostyle, english = american]{csquotes}
+  - \usepackage{rotating, graphicx}
+  - \MakeOuterQuote{"}
+---
+
+This file can be knit from start to finish to produce the Supplement. 
+
+```{r setup, include=FALSE, cache = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE, cache = FALSE}
+
+# Data processing
+
+# This is the original data. One column is omitted, the "comments" question at the very end of the survey
+# Much of this column was feedback on the survey, suggestions on analysis, or just appreciation for the survey
+# But it also included identifying information including name and university program. For the sake of consistency, 
+# The entire column was removed. If you are curious if some of this column of free written response can be made available,
+# please contact the authors. In the survey this omitted question was at the very end after Q5f (main focus in cost-effectiveness analysis)
+# The wording of the ommitted question was "Any further comments?" but next time maybe we can make another column if people feel
+# compelled to put their name or identifying information. 
+
+responses <- read.csv("//Users/emackay/Documents/Affordability\ and\ Value\ in\ Decision\ Rules\ for\ Cost-Effectiveness\ --\ A\ Survey\ of\ Health\ Economists/data_wcategories.csv")
+
+responses$Age <- ifelse(responses$Q5c == "<25" | responses$Q5c == "25-40", "younger", "zolder")
+responses$YrsExperience <- as.character(responses$Q5d)
+# This data was put in Excel at some point in time which incorrectly interpreted "5-10" years of experience as a date
+responses$YrsExperience[which(responses$YrsExperience == "10-May")] <- "6+"
+responses$YrsExperience[which(responses$YrsExperience == "10+")] <- "6+"
+responses$YrsExperience <- as.factor(responses$YrsExperience)
+responses$NumCEA <- as.character(responses$Q5e)
+# Just using this as a binary in this analysis
+responses$NumCEA <- ifelse(responses$NumCEA == "0",
+                           "0",
+                           "1+")
+responses$NumCEA <- as.factor(responses$NumCEA)
+responses$CountryFocus <- responses$Q5f
+responses$CountryFocus[which(responses$CountryFocus == "")] <- NA
+responses$CountryFocus <- droplevels(as.factor(responses$CountryFocus))
+# Gender analysis is Female vs Other
+responses$Gender <- ifelse(responses$Q5b == "Female", "Female", "Other")
+responses$Position <- as.character(responses$Q5a)
+# The "position" variable lumps academic positions together under the "Academic" category, but we retain Q5a for specific analysis within Academia
+responses$Position <- ifelse(responses$Position %in% c("Government", "Industry", "Other"),
+                             responses$Position,
+                             "Academic")
+responses$Position <- as.factor(responses$Position)
+responses$Masters <- ifelse(responses$Q5a == "Master's Student", "Yes", "No")
+
+responses <- within(responses, CountryFocus <- relevel(CountryFocus, ref = "Low- and middle-income countries"))
+responses$CountryFocus[which(responses$CountryFocus == "")] <- NA
+```
+
+```{r, include = FALSE, cache = FALSE}
+
+# Question 5a
+# Current position
+summary(responses$Q5a)
+
+# Question 5c
+# Age
+summary(responses$Q5c)
+
+# Question 5b
+# Gender identity
+summary(responses$Q5b)
+
+# Question 5d
+# Years of experience (coursework, research, OR teaching)
+#      with cost-effectiveness analysis
+summary(responses$Q5d)
+
+# Question 5e
+# Number of cost-effectiveness analyses to which you have contributed
+summary(responses$Q5e)
+
+# Question 4c
+# What was the setting of your last cost-effectiveness analysis?
+summary(responses$Q4c)
+
+# Question 5f
+# Which of the following are your main focus in cost-effectiveness analysis?
+summary(responses$Q5f)
+
+```
+
+```{r, include = FALSE, cache = FALSE}
+
+# Inputting data for this breakdown
+
+categories <- c("",
+                as.character(unique(responses$Q5a))[c(4, 5, 6, 2, 1, 3, 7)],
+                "",
+                as.character(unique(responses$Q5c))[c(4, 1:3)],
+                "",
+                as.character(unique(responses$Q5b))[c(2, 1, 4, 3, 6)],
+                "",
+                #as.character(unique(responses$Q5d))[c(4, 2, 1, 3)],
+                "<1", "1-5", "5-10", "10+",
+                "",
+                #as.character(unique(responses$Q5e))[c(1, 4, 3, 2)],
+                "0", "1-2", "3-5", "5+",
+                "",
+                as.character(unique(responses$Q4c))[c(3, 4, 2)],
+                "",
+                as.character(unique(responses$Q5f))[c(4, 3, 2)])
+categories
+
+num_people <- c("Number of people",
+                "13 (8%)",
+                "10 (6%)",
+                "39 (23%)",
+                "23 (14%)",
+                "31 (18%)",
+                "43 (25%)",
+                "11 (6%)",
+                "",
+                "34 (20%)",
+                "96 (56%)",
+                "32 (19%)",
+                "8 (5%)",
+                "",
+                "72 (42%)",
+                "91 (54%)",
+                "2 (1%)",
+                "3 (2%)",
+                "1 (1%)",
+                "",
+                "46 (27%)",
+                "51 (30%)",
+                "32 (19%)",
+                "41 (24%)",
+                "",
+                "38 (22%)",
+                "46 (27%)",
+                "24 (14%)",
+                "62 (36%)",
+                "",
+                "29 (17%)",
+                "94 (55%)",
+                "8 (5%)",
+                "",
+                "23 (14%)",
+                "100 (59%)",
+                "43 (25%)")
+
+var_description <- c("Current position",
+                     "", "", "", "", "", "", "",
+                     "Age (years)",
+                     "","","","",
+                     "Gender identity",
+                     "","","","","",
+                     "Years of CEA experience",
+                     "","","","",
+                     "Number of cost-effectiveness analyses (approx)",
+                     "","","","",
+                     "Setting of last cost-effectiveness analysis",
+                     "","","",
+                     "Regional focus",
+                     "","","")
+
+length(var_description)
+length(categories)
+length(num_people)
+
+#View(categories)
+
+```
+
+<!-- \pagebreak --> 
+
+<!--  # Sampling --> 
+<!-- To obtain our sample, we sent invitations to approximately 60 professors, PhD students, and industry contacts at 35 medium-to-large research institutions.  Individuals were encouraged to pass the survey onto potential respondents.  We also placed an invitation in the Society for Medical Decision-Making newsletter. Respondents were required to have taken at least one course in cost-effectiveness analysis (CEA) and/or contributed to at least one analysis. -->
+
+\pagebreak
+
+# Survey Participant Demographics
+\begin{landscape}
+```{r, cache = FALSE, echo = FALSE, results = "asis", warning = FALSE, message = FALSE}
+
+table1_demographics <- cbind(var_description, categories, num_people)
+# Use the stargazer package
+stargazer::stargazer(table1_demographics,
+                     notes=c("Demographic information about survey respondents (n = 170). Years of CEA experience refers to coursework, research, or teaching"),
+                     summary = FALSE,
+                     title = "Participant demographics",
+                     colnames = FALSE,
+                     header = FALSE)
+
+```
+
+```{r, determiningInternational, include = FALSE, cache = FALSE}
+
+# Adapted from file "Week One Tasks"
+
+# LMIC
+which(responses$Q5f == "Low- and middle-income countries")
+# 6  14  27  44  45  60  61  63  73  74  84  86  87  93  97  99 101 110 120 140 144 160 163
+
+international_lmic <- which(responses$Q5f == "Low- and middle-income countries")
+
+# LMIC
+which(responses$Q4c == "Low- and middle-income countries")
+#1   3  21  22  24  41  42  45  56  59  60  74  75  83  84  95 96  97 104 105 106 107 111 112 114 121 127 138 155
+international_lmic_other <- which(responses$Q4c == "Low- and middle-income countries")
+
+# Use the LMIC for the one at the end (5f) but when analyzing 4a then only use 4c. The only time looking at 4c is when analyzing 4a
+
+responses$Q4a_4_TEXT
+# NICE: 20, 22, 26, 28, 53, 64, 75, 118, 125, 139
+# 60%: 39
+# Euros: 33
+# Woods: 6, 14 # Country-level threshold (Woods et al 2016)
+# Spain: 21
+# UK: 7, 16, 29, 168
+international_text <- c(6, 7, 14, 16, 20, 21, 22, 26, 28, 29, 33, 39, 53, 64, 75, 118, 125, 139, 168)
+# Refer to Neumann: 70, 81 --> NOT international, that is American
+
+
+
+# NICE: 12, 25, 43, 65, 67, 73, 108, 119, 134, 
+# Neumann: 37, 51, --> NOT international, that is American
+# 60%: 52
+# Euros: 113
+# Woods: 111, 114 # Country-level threshold (Woods et al 2016)
+# Spain: 145
+# UK: 167
+#international_text <- c(12, 25, 43, 65, 67, 73, 108, 119, 134, 52, 113, 111, 114, 145, 167)
+
+# international <- unique(c(international_lmic, international_lmic_other, international_text))
+
+# This step after we decided International and LMIC should be mutually exclusive
+which(international_text %in% which(responses$Q5f == "Low- and middle-income countries"))
+# These ones at intersection will be marked as LMIC
+
+international <- international_text[-which(international_text %in% which(responses$Q5f == "Low- and middle-income countries"))]
+
+international <- international[order(international)]
+international
+
+# Set all to "No" first and then replace those that are international with "Yes"
+responses$International = "No"
+responses$International[international] = "Yes"
+
+# There's the LMIC category
+# The NICE / European people are a different category
+
+# Compare num_form_dropped (which has category labels) with responses, which has International
+# compare_national_category <- merge(responses, num_form_dropped, by = "ResponseId")
+# 
+# summary(as.factor(compare_national_category[which(compare_national_category$Category_Label == "Moderate"), ]$Q1a.x))
+# summary(as.factor(compare_national_category[which(compare_national_category$Category_Label == "Budget Hawk"), ]$Q1a.x))
+# summary(as.factor(compare_national_category[which(compare_national_category$Category_Label == "Hard ICER Hawk"), ]$Q1a.x))
+# summary(as.factor(compare_national_category[which(compare_national_category$Category_Label == "Soft ICER Hawk"), ]$Q1a.x))
+
+```
+
+
+```{r, include = FALSE, cache = FALSE}
+
+# Most interesting columns 
+# "Q1a", "Q1b", "Q1c", "Q3a_1", "Q3b", "Q3c_1", "Q3d", "Q4a", "Q4b", "Q4b_4_Category"
+
+my_columns <- which(names(responses) %in% c("Q1a", "Q1b", "Q1c", "Q3a_1", "Q3b", "Q3c_1", "Q3d", "Q4a", "Q4b", "Q4b_4_Category"))
+# 12 13 16 35 36 37 38 39 42 44
+#my_questions <- which(names(questions) %in% c("Q1a", "Q1b", "Q1c", "Q3a_1", "Q3b", "Q3c_1", "Q3d", "Q4a", "Q4b", "Q4b_4_Category"))
+# 12 13 15 33 34 35 36 37 39
+
+# Predicting which response is the unique response we are comparing to
+# 12 - 2; 13 - 2; 16 - 3; 35 - 1; 36 - 2; 37 - 2; 38 - 3; 39 - 5; 42 - 2; 44 - 2
+which_unique <- c(2, 2, 3, 1, 2, 2, 3, 5, 2, 2)
+
+# New, better version dependent on column numbers
+unique(responses[, 44])[2]
+
+```
+
+```{r, include = FALSE, cache = FALSE}
+
+# This function creates the datatables shown in the Supplement, adjusted and unadjusted OR with their confidence intervals
+
+create_datatable <- function(i){
+  
+  responses$Test <- ifelse(responses[, my_columns[i]] == unique(responses[, my_columns[i]])[which_unique[i]], 1, 0)
+  
+  wtp_reflection <- glm(Test ~ Position + Masters + Age + Gender + YrsExperience + NumCEA + CountryFocus,
+                        family=binomial(link='logit'),
+                        data = responses)
+
+  a<-summary(wtp_reflection)
+  pvals <- a$coefficients[,4]
+  # Taken from stack overflow
+  # sigSymbols <- symnum(pvals, na = FALSE, 
+  #                      cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+  #                      symbols = c("***", "**", "*", " "))
+  sigSymbols <- symnum(pvals, na = FALSE, 
+                       cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+                       symbols = c("***", "**", "*", " "))
+  sigSymbols
+  
+  my_results <- data.frame(wtp_reflection$coefficients)
+  my_results$CI_adjusted <- paste(round(exp(wtp_reflection$coefficients), 1), " (", round(exp(wtp_reflection$coefficients - (1.96 * summary(wtp_reflection)$coefficients[,2])), 1), ", ", round(exp(wtp_reflection$coefficients + (1.96 * summary(wtp_reflection)$coefficients[,2])), 1), ")", sigSymbols, sep="")
+  my_results <- my_results[-c(1), ]
+  
+  
+  # clean version makes things easier down the road with output
+  printed_together  <- rbind(c("", "1.00 (Ref)"), 
+                   my_results[c(1:3), ],
+                   c("", ""),
+                   c("", "1.00 (Ref)"),
+                   my_results[4, ], 
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[5, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[6, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[7, ],
+                   my_results[8, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[9, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[10, ],
+                   my_results[11, ])
+  
+  table1vars <- c("Position", "Masters", "Age", "Gender", "YrsExperience", "NumCEA", "CountryFocus")
+  
+  my_results <- data.frame(wtp_reflection$coefficients)
+  my_results$CI <- paste(round(exp(wtp_reflection$coefficients), 1), " (", round(exp(wtp_reflection$coefficients - (1.96 * summary(wtp_reflection)$coefficients[,2])), 1), ", ", round(exp(wtp_reflection$coefficients + (1.96 * summary(wtp_reflection)$coefficients[,2])), 1), ")", sep="")
+  my_results <- my_results[-c(1), ]
+  
+  # starts at 1, then is increased by one in the loop within loop, depending how many coefficients in the specific variable
+  q = 1
+  for (var in table1vars) {
+    #print(var)
+    formula = paste("Test ~ ", var)
+    glm1 <- glm(formula,
+                family=binomial(link='logit'),
+                        data = responses)
+    #summary(glm1)
+    
+    #length(glm1$coefficients)
+    
+    pvals <- summary(glm1)$coefficients[,4]
+    # Taken from stack overflow
+    # sigSymbols <- symnum(pvals, na = FALSE, 
+    #                    cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+    #                    symbols = c("***", "**", "*", " "))
+    sigSymbols <- symnum(pvals, na = FALSE, 
+                   cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+                   symbols = c("***", "**", "*", " "))
+    sigSymbols
+    
+    for (j in 2:length(glm1$coefficients)){
+      my_results$CI[q] = paste(round(exp(glm1$coefficients[j]), 1), " (", round(exp(glm1$coefficients[j] - (1.96 * summary(glm1)$coefficients[j,2])), 1), ", ", round(exp(glm1$coefficients[j] + (1.96 * summary(glm1)$coefficients[j,2])), 1), ")", sigSymbols[j], sep = "")
+      
+      # q gets increased within this loop
+      q = q+1
+    }
+    
+  }
+  
+  printed_alone  <- rbind(c("", "1.00 (Ref)"), 
+                   my_results[c(1:3), ],
+                   c("", ""),
+                   c("", "1.00 (Ref)"),
+                   my_results[4, ], 
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[5, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[6, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[7, ],
+                   my_results[8, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[9, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[10, ],
+                   my_results[11, ])
+  
+  final_results <- cbind(printed_alone$CI, printed_together$CI_adjusted)
+  
+  variable_descriptions <- c("Academia", "Government", "Industry", "Other",
+                             "","No", "Yes",
+                             "","< 40", "40 +",
+                             "","Female", "Other",
+                             "","<1", "1-5","6 +",
+                             "","0","1+",
+                             "","Low- and middle-income countries","High-income countries","A combination of both")
+  # length(variable_descriptions)
+  # dim(final_results)
+  
+  final_named <- cbind(variable_descriptions, final_results)
+  
+  final_named <- rbind(c("", "Unadjusted OR (95% CI)", "Adjusted OR (95% CI)"), final_named)
+  
+  variable_type <- c("Current position","","","","",
+                     "Master's","","",
+                     "Age (years)","","",
+                     "Gender identity","","",
+                     "Years of CEA experience","","","",
+                     "Number of CEAs (approx)","","",
+                     "Regional focus","","","")
+  
+  final_named <- cbind(variable_type, final_named)
+  
+  final_named <- rbind(c("", "", "", ""), final_named)
+  
+  colnames(final_named) <- c("", "", "", "")
+  
+  return(final_named)
+  
+}
+```
+\end{landscape}
+
+```{r, results='asis', echo = FALSE, cache = FALSE, include = FALSE, eval = FALSE}
+
+stargazer::stargazer(create_datatable(1), notes=c("* p < 0.1, ** p < 0.05, *** p < 0.01", "Logistic regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{in an academic paper} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher odds ratios indicate more favorable options toward drug X.", "Adjusted ORs are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+          column.sep.width = "1pt",
+          title = 'Logistic regression of whether to recommend drug X in an academic paper vs demographic characteristics',
+          font.size = "normalsize",
+          summary = FALSE,
+          colnames = FALSE,
+          header = FALSE)
+
+cat('\\pagebreak')
+stargazer::stargazer(create_datatable(3), notes=c("* p < 0.1, ** p < 0.05, *** p < 0.01", "Logistic regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{to a policymaker} to fund drug X", " at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", " 20\\% of the Medicaid budget over the next 5 years.  Higher odds ratios indicate more favorable options toward drug X.",  "Adjusted ORs are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+          column.sep.width = "1pt",
+          title = 'Logistic regression of whether to recommend drug X to a policymaker vs demographic characteristics',
+          font.size = "normalsize",
+          summary = FALSE,
+          colnames = FALSE,
+          header = FALSE)
+
+```
+
+# Subgroup heatmaps
+
+We show heatmaps (Figure 2) for different groups: all respondents as well as respondents 1) studying non-US developed countries, 2) studying low- and middle-income countries (LMICs), 3) excluding Master's students, and 4) who had conducted $\geq$ 1 cost-effectiveness analysis.
+
+
+Respondents determined whether each square in the grid should be green (would recommend intervention), red (would not recommend intervention), or white (neutral) in the United States context.  The x-axis includes cost-effectiveness ($/QALY), with larger values indicating less cost-effective services.  The y-axis shows cost, representing total costs for the eligible patient population ("budget impact").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%.”6  The color of the square is the average response over all participants with value responses to this question (n = 144, 85% of total).  Non-US developed countries included respondents who noted being in such settings in the free response section, including the United Kingdom (n = 14) as well as Spain and Canada (n = 17), provided thresholds in pounds/Euros, or reported using the NICE threshold for cost-effectiveness.  LMIC included respondents who reported low- and middle-income countries as their main focus in cost-effectiveness analysis (n = 23).   All but Master's excludes Master's students, leaving n = 122.  At least 1 CEA reference to people who self-reported having worked on more than 1 CEA or who had provided a threshold in their most recent CEA (n = 119).
+
+Trends were similar across professors, other academic positions, and non-academic positions. Professors were slightly less likely than other academic respondents to recommend high-cost/high value interventions (lower left) or low-cost/low-value interventions (upper right).  By contrast, they were more likely than non-academic respondents to recommend both high-cost/high value and low cost/low value interventions.
+
+\pagebreak
+
+```{r, include = FALSE}
+# Getting the numbers for the caption
+
+# summary(as.factor(num_form_dropped$Masters))
+# summary(as.factor(num_form_dropped$NumCEA))
+
+
+```
+
+```{r, echo = FALSE, include = FALSE, cache = FALSE}
+### Drop irrationals for everything related to the matrix analysis
+# Irrational are responses that are not logically coherent
+# We consider these responses to be people who "skipped" the question by making a checkerboard response or clicking randomly
+# or only clicking a single square, for example
+# It is also possible that some people misunderstood the question
+
+num_form <- data.frame(lapply(responses, as.character), stringsAsFactors=FALSE)
+
+# This to save the original format and also set it up as character instead of factor
+
+#which(names(responses) == "Q2_8")
+
+for (i in c(which(names(responses) == "Q2_8"):which(names(responses) == "Q2_23"))) {
+  for (j in c(1:dim(responses)[1])){
+    if (as.character(responses[j, i]) == "Like") {
+      num_form[j, i] <- strtoi(1)
+    } else if (as.character(responses[j, i]) == "Neutral") {
+      num_form[j, i] <- strtoi(0)
+    } else if (as.character(responses[j, i]) == "Dislike") {
+      num_form[j, i] <- strtoi(-1)
+    }
+  }
+}
+
+# These are where somebody mis-clicked, only where clear from visual inspection
+# Old numbers from when the data were in a different order
+# 107 just needs to have row 4, column 2 changed to "Dislike" (CHECKED)
+# 76 just needs to have row 1, column 3 changed to "Like" (CHECKED)
+# 142 just needs a 1 to fill in the row they intended (CHECKED)
+# 123 just needs one box to be filled differently -->  (CHECKED)
+# probably intended ICER hawk
+# num_form$Q2_10[76] <- 1
+# num_form$Q2_21[107] <- -1
+# num_form$Q2_22[142] <- -1
+# num_form$Q2_22[123] <- -1
+
+# THESE NUMBERS CHANGE WITH THE ROWS RELABELED
+# Number 129 Needs to have row 3 column 4 switched to "Dislike"?
+# Number 94 needs row 3 column 1 switched to like
+# Number 5 needs row 3 column 4 switched to "dislike"
+# Number 117 needs row row 2 column 4 switched to "dislike"
+num_form$Q2_10[94] <- 1
+num_form$Q2_21[117] <- -1
+num_form$Q2_22[5] <- -1
+num_form$Q2_22[129] <- -1
+
+
+
+# 
+irrational = rep(NA, dim(num_form)[1])
+
+for (indiv in c(1:dim(num_form)[1])){
+
+q = indiv
+
+irr_check <- matrix(NA, 4, 4)
+irr_check[1, 1] <- strtoi(num_form$Q2_8[q])
+irr_check[1, 2] <- strtoi(num_form$Q2_9[q])
+irr_check[1, 3] <- strtoi(num_form$Q2_10[q])
+irr_check[1, 4] <- strtoi(num_form$Q2_11[q])
+irr_check[2, 1] <- strtoi(num_form$Q2_12[q])
+irr_check[2, 2] <- strtoi(num_form$Q2_13[q])
+irr_check[2, 3] <- strtoi(num_form$Q2_14[q])
+irr_check[2, 4] <- strtoi(num_form$Q2_15[q])
+irr_check[3, 1] <- strtoi(num_form$Q2_16[q])
+irr_check[3, 2] <- strtoi(num_form$Q2_17[q])
+irr_check[3, 3] <- strtoi(num_form$Q2_18[q])
+irr_check[3, 4] <- strtoi(num_form$Q2_19[q])
+irr_check[4, 1] <- strtoi(num_form$Q2_20[q])
+irr_check[4, 2] <- strtoi(num_form$Q2_21[q])
+irr_check[4, 3] <- strtoi(num_form$Q2_22[q])
+irr_check[4, 4] <- strtoi(num_form$Q2_23[q])
+irr_check
+
+irrational_indiv = "No"
+for (x in c(1:4)){
+  for (y in c(1:4)){
+    curr_val = irr_check[x, y]
+
+    for (i in c(1:x)){
+      for (j in c(1:y)){
+        if(irr_check[i, j] < curr_val){irrational_indiv = "Yes"}
+      }
+    }
+  }
+}
+
+#print(irrational)
+irrational[indiv] <- irrational_indiv
+
+}
+
+irrational
+
+which(irrational == "Yes")
+length(which(irrational == "Yes"))
+
+library(gplots)
+library(RColorBrewer)
+
+# Let's get rid of the bad ones
+# which(irrational == "Yes")
+# length(which(irrational == "Yes"))
+
+# This part moved to the front so they are not categorized ever as irrational
+# # 107 just needs to have row 4, column 2 changed to "Dislike"
+# # 76 just needs to have row 1, column 3 changed to "Like"
+# # 142 just needs a 1 to fill in the row they intended
+# # 123 just needs one box to be filled differently --> 
+# # probably intended ICER hawk
+# num_form$Q2_10[76] <- 1
+# num_form$Q2_21[107] <- -1
+# num_form$Q2_22[142] <- -1
+# num_form$Q2_22[123] <- -1
+
+
+# Get rid of the rest
+# which(irrational == "Yes")
+
+# Get rid of 103, 94, 79, 56, 50, and 4, 116, 121, 123, 127, 128, 129, 130, 132, 135, 136, 139, 141, 142, 144, 149, 153, 154, 160, 162, 163, 164, 170
+#irrational_rows <- c(4, 50, 56, 79, 94, 103, 116, 121, 123, 127, 128, 129, 130, 132, 135, 136, 139, 141, 142, 144, 149, 153, 154, 160, 162, 163, 164, 170)
+
+irrational_rows <- which(irrational == "Yes")
+# irrational_rows <- c(4,  50,  56,  79,  94, 103, 116, 121, 127, 128, 129, 130, 132, 135, 136, 139, 141, 144, 149, 153, 154, 160, 162, 163, 164, 170)
+
+dim(num_form)
+
+# Only drop these rows if we're working with the full dataframe
+if (dim(num_form)[1] == 170){
+  num_form_dropped <- num_form[-c(irrational_rows), ]
+  irrational_df <- num_form[c(irrational_rows), ]
+}
+
+dim(num_form_dropped)
+dim(irrational_df)
+
+```
+
+```{r, include = FALSE, cache = FALSE}
+
+# This is the analysis of where people "clicked" to give a -1, 0, or 1 to the different boxes (4x4 grid)
+
+subset_click_vals <- function(x, df) {
+  # Recreating the 4x4 grid
+  click_vals <- matrix(NA, 4, 4)
+  
+  click_vals[1, 1] <- mean(strtoi(df$Q2_8[x]), na.rm = TRUE)
+  click_vals[2, 1] <- mean(strtoi(df$Q2_9[x]), na.rm = TRUE)
+  click_vals[3, 1] <- mean(strtoi(df$Q2_10[x]), na.rm = TRUE)
+  click_vals[4, 1] <- mean(strtoi(df$Q2_11[x]), na.rm = TRUE)
+  click_vals[1, 2] <- mean(strtoi(df$Q2_12[x]), na.rm = TRUE)
+  click_vals[2, 2] <- mean(strtoi(df$Q2_13[x]), na.rm = TRUE)
+  click_vals[3, 2] <- mean(strtoi(df$Q2_14[x]), na.rm = TRUE)
+  click_vals[4, 2] <- mean(strtoi(df$Q2_15[x]), na.rm = TRUE)
+  click_vals[1, 3] <- mean(strtoi(df$Q2_16[x]), na.rm = TRUE)
+  click_vals[2, 3] <- mean(strtoi(df$Q2_17[x]), na.rm = TRUE)
+  click_vals[3, 3] <- mean(strtoi(df$Q2_18[x]), na.rm = TRUE)
+  click_vals[4, 3] <- mean(strtoi(df$Q2_19[x]), na.rm = TRUE)
+  click_vals[1, 4] <- mean(strtoi(df$Q2_20[x]), na.rm = TRUE)
+  click_vals[2, 4] <- mean(strtoi(df$Q2_21[x]), na.rm = TRUE)
+  click_vals[3, 4] <- mean(strtoi(df$Q2_22[x]), na.rm = TRUE)
+  click_vals[4, 4] <- mean(strtoi(df$Q2_23[x]), na.rm = TRUE)
+  
+  return(click_vals)
+}
+
+make_ggplot_heatmap <- function(x, title){
+
+df.chart_data <- expand.grid(cost = c("High cost", "At alarm bell\n threshold", "Medium cost", "Low cost")
+                           , icer = c("<50K", "50-100K", "100-300K", "300K+")
+                           )
+
+df.chart_data$suggest <- as.vector(x)
+
+t <- theme(axis.line = element_blank(), panel.background = element_blank(), 
+           plot.background = element_blank(),
+           panel.border = element_blank(),
+           panel.grid.major=element_blank(),
+           panel.grid.minor=element_blank(), 
+           plot.title=element_text(size=11, hjust = 0.5),
+           axis.text.x = element_text(size = 15, color = "black"), 
+           axis.text.y = element_text(size = 15, color = "black"),
+           axis.title.x = element_text(size = 17, color = "black"),
+           axis.title.y = element_text(size = 17, color = "black"),
+           line = element_blank())
+
+return(
+ggplot(data = df.chart_data, aes(x = icer, y = rev(cost))) +
+  geom_tile(aes(fill = suggest)) +
+  geom_text(aes(label = round(suggest, 2))) +
+  ggtitle(paste(title)) +
+  theme(plot.title = element_text(face="bold", size=32, hjust=0)) + 
+  t +
+  scale_fill_gradient2(low = "darkred", mid = "white", high = "darkgreen") +
+  ylab("") +
+  xlab("") + 
+  theme(legend.title = element_text(size = 10),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size=16),
+        axis.title=element_text(size=14,face="bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position="none"))+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+}
+
+```
+
+```{r, include = FALSE, cache = FALSE}
+# install.packages('gridExtra')
+
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(grid)
+
+create_matrix_plot <- function(rows, title){
+
+little_plot <- function(i){
+  #print(i)
+  DF <- read.table(text="Count 1     0     -1
+1    500    250    50", header=TRUE)
+  
+  DF[1, ] = c(1,
+              length(which(num_form[,i][rows] == 1)),
+              length(which(num_form[,i][rows] == 0)),
+              length(which(num_form[,i][rows] == -1)))
+
+  DF1 <- melt(DF, id.var="Count")
+
+  my_plot <- (ggplot(DF1, aes(x = Count, y = value, fill = variable))
+              + geom_bar(stat = "identity")
+              + scale_fill_manual("legend", 
+                                  values = c("X.1" = "red", 
+                                             "X0" = "white", "X1" = "green"))
+              + theme(axis.title.x=element_blank(),
+                    axis.text.x=element_blank(),
+                    axis.ticks.x=element_blank(),
+                    axis.title.y=element_blank(),
+                    axis.text.y=element_blank(),
+                    axis.ticks.y=element_blank(),
+                    legend.position="none",
+                    panel.border = element_rect(colour = "black", fill=NA, size=2),
+                    panel.grid.major = element_blank(), 
+                    panel.grid.minor = element_blank(),
+                    panel.background = element_blank()))
+  return(my_plot)
+}
+
+# re-ordering, notice it goes up by 4 due to it being a 4x4 table
+pl <- lapply(c(17, 21, 25, 29, 18, 22, 26, 30, 19, 23, 27, 31, 20, 24, 28, 32), little_plot)
+
+lg <- tableGrob(c("", "Low cost", "Medium cost", "At alarm bell threshold", "High cost"), theme= ttheme_minimal())
+rg <- arrangeGrob(grobs = pl, ncol=4,
+             top = textGrob(title,gp=gpar(fontsize=18)))
+
+grid.newpage()
+return(grid.draw(cbind(lg, rg, size = "last")))
+
+
+}
+
+```
+
+```{r, cache = FALSE, include = FALSE}
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(grid)
+
+everybody_normal <- make_ggplot_heatmap(subset_click_vals(c(1:dim(num_form_dropped)[1]), num_form_dropped), title = paste("All Participants\n(n=", length(c(1:dim(num_form_dropped)[1])),", ", length(c(1:dim(num_form_dropped)[1])) /  length(c(1:dim(num_form_dropped)[1])) * 100, "%)", sep = ""))
+
+international_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$International == "Yes"), num_form_dropped), title = paste("Non-US Developed Countries\n(n=", length(which(num_form_dropped$International == "Yes")),", ", round(length(which(num_form_dropped$International == "Yes")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+all_but_international_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$International != "Yes"), num_form_dropped), title = paste("All Other Countries\n(n=", length(which(num_form_dropped$International != "Yes")),", ", round(length(which(num_form_dropped$International != "Yes")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+lmic_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Q5f == "Low- and middle-income countries"), num_form_dropped), title = paste("LMIC\n(n=", length(which(num_form_dropped$Q5f == "Low- and middle-income countries")),", ", round(length(which(num_form_dropped$Q5f == "Low- and middle-income countries")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+all_but_lmic_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Q5f != "Low- and middle-income countries"), num_form_dropped), title = paste("All But LMIC\n(n=", length(which(num_form_dropped$Q5f != "Low- and middle-income countries")),", ", round(length(which(num_form_dropped$Q5f != "Low- and middle-income countries")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+no_masters_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Masters == "No"), num_form_dropped), title = paste("All But Masters\n(n=", length(which(num_form_dropped$Masters == "No")),", ", round(length(which(num_form_dropped$Masters == "No")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+masters_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Masters != "No"), num_form_dropped), title = paste("Only Masters\n(n=", length(which(num_form_dropped$Masters != "No")),", ", round(length(which(num_form_dropped$Masters != "No")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+other_academics_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Position == "Academic" & num_form_dropped$Q5a != "Professor"), num_form_dropped), title = paste("Other Academic Positions\n(n=", length(which(num_form_dropped$Position == "Academic" & num_form_dropped$Q5a != "Professor")),", ", round(length(which(num_form_dropped$Position == "Academic" & num_form_dropped$Q5a != "Professor")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+professors_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Q5a == "Professor"), num_form_dropped), title = paste("Professors\n(n=", length(which(num_form_dropped$Q5a == "Professor")),", ", round(length(which(num_form_dropped$Q5a == "Professor")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+non_academics_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$Position != "Academic"), num_form_dropped), title = paste("Non Academic Positions\n(n=", length(which(num_form_dropped$Position != "Academic")),", ", round(length(which(num_form_dropped$Position != "Academic")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+done_cea_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$NumCEA == "1+"), num_form_dropped), title = paste("At Least 1 CEA\n(n=", length(which(num_form_dropped$NumCEA == "1+")),", ", round(length(which(num_form_dropped$NumCEA == "1+")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+no_cea_normal <- make_ggplot_heatmap(subset_click_vals(which(num_form_dropped$NumCEA != "1+"), num_form_dropped), title = paste("No Prior CEA\n(n=", length(which(num_form_dropped$NumCEA != "1+")),", ", round(length(which(num_form_dropped$NumCEA != "1+")) /  length(c(1:dim(num_form_dropped)[1])) * 100, 0), "%)", sep = ""))
+
+# everybody_normal
+# international_normal
+# lmic_normal
+# no_masters_normal
+# done_cea_normal
+
+```
+
+```{r, echo = FALSE, cache = FALSE, include = FALSE}
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(grid)
+
+everybody_matrixplot <- create_matrix_plot(c(1:dim(num_form_dropped)[1]), "All Participants")
+
+international_matrixplot <- create_matrix_plot(which(num_form_dropped$International == "Yes"), "Non-US Developed Countries")
+
+lmic_matrixplot <- create_matrix_plot(which(num_form_dropped$Q5f == "Low- and middle-income countries"), "LMIC")
+
+no_masters_matrixplot <- create_matrix_plot(which(num_form_dropped$Q5a != "Master's Student"), "All But Masters")
+
+done_cea_matrixplot <- create_matrix_plot(which(num_form_dropped$Q5e != 0), ">1 CEA")
+
+```
+
+```{r, include = FALSE, cache = FALSE}
+library(ggplot2)
+
+# http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+```{r, include = FALSE, cache = FALSE}
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(grid)
+
+
+create_matrix_plot_new <- function(rows, title){
+  
+  little_plot <- function(i){
+    #print(i)
+    DF <- read.table(text="Count 1     0     -1
+  1    500    250    50", header=TRUE)
+    
+    DF[1, ] = c(1,
+                length(which(num_form_dropped[,i][rows] == 1)),
+                length(which(num_form_dropped[,i][rows] == 0)),
+                length(which(num_form_dropped[,i][rows] == -1)))
+  
+    DF1 <- melt(DF, id.var="Count")
+  
+    my_plot <- (ggplot(DF1, aes(x = Count, y = value, fill = variable))
+                + geom_bar(stat = "identity")
+                + scale_fill_manual("legend", 
+                                    values = c("X.1" = "red", 
+                                               "X0" = "white", "X1" = "green"))
+                + theme(axis.title.x=element_blank(),
+                      axis.text.x=element_blank(),
+                      axis.ticks.x=element_blank(),
+                      axis.title.y=element_blank(),
+                      axis.text.y=element_blank(),
+                      axis.ticks.y=element_blank(),
+                      legend.position="none",
+                      panel.border = element_rect(colour = "black", fill=NA, size=2),
+                      panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank(),
+                      panel.background = element_blank()))
+    return(my_plot)
+  }
+
+pl <- lapply((c(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32) + 2), little_plot)
+
+#https://stackoverflow.com/questions/45473843/put-row-and-column-titles-using-grid-arrange-in-r
+
+# Create row and column titles
+# col.titles = paste("C_Title", 1:4)
+# row.titles = paste("R_Title", 5:8)
+
+col.titles = c("<50K", "50-100K","100-300K","300K+")
+row.titles = c("Low cost", "Medium cost", "At alarm bell threshold", "High cost")
+
+
+
+# Add row titles
+pl[1:4] = lapply(1:4, function(i) arrangeGrob(pl[[i]], left=row.titles[i]))
+
+# Add column titles and lay out plots
+a <- grid.arrange(grobs=lapply(c(1,5,9, 13), function(i) {
+  arrangeGrob(grobs=pl[i:(i+3)], bottom=col.titles[i/4 + 1], ncol=1)
+}), ncol=4, top = title)
+return(a)
+
+
+
+
+# 
+# 
+# lg <- tableGrob(c("", "Low cost", "Medium cost", "At alarm bell threshold", "High cost", ""), theme= ttheme_minimal())
+# #lower <- tableGrob(c("", "<50K", "50-100K", "100-300K", "300K+"), theme= ttheme_minimal())
+# 
+# rg <- arrangeGrob(grobs = pl, ncol=4,
+#              top = textGrob(title,gp=gpar(fontsize=18)))
+# 
+# # https://stackoverflow.com/questions/38867430/add-labels-to-a-plot-made-by-grid-arrange-from-multiple-plots
+# 
+# grid.newpage()
+# # return(grid.draw(cbind(lg, rg, size = "last")))
+# 
+# 
+# # SO I COULD JUST PUT ROW LABELS AND COLUMN LABELS HERE
+# grid.arrange(grobs=pl, ncol=4, 
+#                top="top label", bottom="bottom\nlabel", 
+#                left="left label", right="right label")
+# 
+# 
+# return(arrangeGrob(cbind(lg, rg, size = "last")))
+# 
+# grid.draw(rg)
+# panel_letter = textGrob("A", x = 0.5, y = .9, 
+#                         just = c("left", "top"), 
+#                         gp = gpar(fontsize = 40, col =  "black", face="bold"))
+# gt <- gtable_add_grob(gt, panel_letter, t=1, l=1, r=1)  # Append the Grob to the table
+# 
+# 
+# grid.draw(cbind(lg, rg, size = "last"))
+# grid.draw(cbind(lg, rg, size = "first"))
+# 
+# grid.draw(gtable_cbind(lg, rg, size = "last"))
+# 
+# grid.draw(gtable_rbind(gtable_cbind(lg, rg), lower))
+# 
+# gtable_cbind(lg, rg)
+
+}
+
+
+
+# rows = c(1:dim(num_form_dropped)[1])
+# title = "Test"
+# 
+# test <- create_matrix_plot(c(1:dim(num_form_dropped)[1]), "Test")
+# test
+# grid.arrange(test)
+
+```
+
+```{r, include = FALSE, cache = FALSE}
+
+everybody_matrixplot_new <- create_matrix_plot_new(c(1:dim(num_form_dropped)[1]), "All Participants")
+
+international_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$International == "Yes"), "Non-US Developed Countries")
+all_but_international_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$International != "Yes"), "Non-US Developed Countries")
+
+lmic_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$Q5f == "Low- and middle-income countries"), "LMIC")
+non_lmic_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$Q5f != "Low- and middle-income countries"), "LMIC")
+
+no_masters_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$Q5a != "Master's Student"), "All But Masters")
+only_masters_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$Q5a == "Master's Student"), "All But Masters")
+
+done_cea_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$Q5e != 0), "At Least 1 CEA")
+no_cea_matrixplot_new <- create_matrix_plot_new(which(num_form_dropped$Q5e == 0), "At Least 1 CEA")
+
+
+
+
+
+```
+
+## *Figure S1. Tradeoffs between cost-effectiveness and affordability by subgroup.*
+
+```{r, echo = FALSE, cache = FALSE, results = "asis"}
+library(grid)
+everybody_normal
+```
+
+```{r, echo = FALSE, cache = FALSE, fig.height = 9, fig.width = 14}
+
+multiplot(international_normal,
+          lmic_normal,
+          all_but_international_normal,
+          all_but_lmic_normal,
+          cols = 2)
+
+# I'm making the multiplot 7 on the last page, instead of 4 and 3. This helps with consistent spacing.
+
+# Reorganize it so that Only Masters and No Prior CEA are on top of one another
+multiplot(masters_normal,
+          no_cea_normal,
+          no_masters_normal,
+          done_cea_normal,
+          cols = 2)
+
+```
+
+<br>
+<br>
+<br>
+<br>
+\vspace{12pt}
+  
+```{r, echo = FALSE, cache = FALSE, fig.height = 9, fig.width = 14}
+
+multiplot(professors_normal,
+          non_academics_normal,
+          other_academics_normal,
+          cols = 2)
+
+
+# Oops this doesn't work, tries to cram all 7 into the space for a 2x2
+# multiplot(masters_normal,
+#           no_cea_normal,
+#           professors_normal,
+#           non_academics_normal,
+#           no_masters_normal,
+#           done_cea_normal,
+#           other_academics_normal,
+#           cols = 2)
+
+#grid.arrange(everybody_matrixplot_new)
+
+#international_normal
+```
+
+\pagebreak
+
+# Enhanced heatmaps
+
+These heatmaps show the breakdown of individuals that selected each option for the subgroups listed above.
+
+Respondents determined whether each square in the grid should be green (would recommend intervention), red (would not recommend intervention), or white (neutral) in the United States context.  The x-axis includes cost-effectiveness ($/QALY), with larger values indicating less cost-effective services.  The y-axis shows cost, representing total costs for the eligible patient population ("budget impact").  The alarm bell threshold is the “amount of net cost increase per individual new intervention that would contribute to growth in overall health care spending greater than the anticipated growth in national GDP + 1%.”6  The colors in each square represent the breakdown of participant responses for each square (n = 144, 85% of total).  Non-US developed countries included respondents who noted being in such settings in the free response section, including the United Kingdom (n = 14) as well as Spain and Canada (n = 17), provided thresholds in pounds/Euros, or reported using the NICE threshold for cost-effectiveness.  LMIC included respondents who reported low- and middle-income countries as their main focus in cost-effectiveness analysis (n = 23).  All but Master's excludes Master's students, leaving n = 122.  At least 1 CEA reference to people who self-reported having worked on more than 1 CEA or who had provided a threshold in their most recent CEA (n = 119).
+
+## *Figure S2-A*
+
+```{r, echo = FALSE, cache = FALSE, fig.height = 7, fig.width = 11, fig.align = "center"}
+
+grid.arrange(everybody_matrixplot_new)
+
+```
+
+
+## *Figure S2-B*
+
+```{r, echo = FALSE, cache = FALSE, fig.height = 7, fig.width = 11, fig.align = "center"}
+
+grid.arrange(international_matrixplot_new)
+
+```
+
+## *Figure S2-C*
+
+```{r, echo = FALSE, cache = FALSE, fig.height = 7, fig.width = 11, fig.align = "center"}
+grid.arrange(lmic_matrixplot_new)
+
+```
+
+## *Figure S2-D*
+
+
+```{r, echo = FALSE, cache = FALSE, fig.height = 7, fig.width = 11, fig.align = "center"}
+grid.arrange(no_masters_matrixplot_new)
+
+
+```
+
+## *Figure S2-E*
+
+```{r, echo = FALSE, cache = FALSE, fig.height = 7, fig.width = 11, fig.align = "center"}
+grid.arrange(done_cea_matrixplot_new)
+
+
+```
+
+\pagebreak
+
+# Summaries of Free Response Questions
+
+Our example scenarios attempted to provide as options high-level recommendations commonly provided in applied papers. We allowed authors to select “Other” as a response to this question and fill in alternative recommendations. Below are summaries to the fill-in responses. 
+
+Question: Which of the following best explains your response in the previous question?\
+A) Drug X is cost-effective, but policymakers would have to to reallocate funding from existing programs to pay for the drug. \
+B) Drug X is cost-effective, but policymakers should wait until more competitors or generic options enter the market.\
+C) Other\
+
+Results for "Other" are summarized below.
+
+```{r, results = 'asis', echo=FALSE}
+
+display_free_response_1b = cbind(c("Cost-effectiveness is incomplete information", "Increase budget or reallocate (add the reallocation to main category)", 
+                                "Need special decision process given high budget impact", "Negotiate prices or wait until generics (just add the waiting to the main categoriy)"),
+                              c(4, 1, 10, 1))
+stargazer::stargazer(display_free_response_1b, header = FALSE)
+
+```
+
+Question: You are asked to advise the Massachusetts health commision on whether and how to adopt Drug X in its Medicaid budget. Which of the following best summarizes how you would advise them?\
+A) Fund Drug X for all eligible patients.\
+B) Refuse to fund Drug X at its current price. Wait for a lower price or competitors.\
+C) Only fund Drug X for half of the eligible population (chosen at random) to reduce budget impact concerns.\
+D) Other\
+
+Results for "Other" are summarized below.
+
+```{r, results = 'asis', echo=FALSE}
+
+display_free_response_1c = cbind(c("Identify subpopulations that would benefit most", "Adjust budget", 
+                                "Negotiate price/Novel payment mechanisms", "Use shopping spree on Medicaid budget", "Other"),
+                              c(23, 2, 6, 7, 6))
+stargazer::stargazer(display_free_response_1c, header = FALSE)
+
+```
+
+
+\pagebreak
+
+# Survey Outcomes by Demographic Subgroups
+
+In Figure 2 below, we present main survey outcomes by demographic subgroups.  After adjusting the significance threshold (Bonferroni corrected threshold: 0.05/32=0.0016) for multiple testing, we did not identify significant differences by demographic characteristics.  (The smallest p-values observed were across academic positions in terms of their Evaluation of Drug X (p = 0.052) and across years of experience in terms of whether the willingness-to-pay threshold should reflect budget or societal willingness-to-pay (p = 0.03), both of which may merit further exploration in a higher-powered sample.) For reference, the category label was significant in the evaluation of Drug X (p < 0.00001) and whether to Adopt Drug X in the Medicaid Budget (p = 0.0008).
+
+```{r, echo = FALSE, include = FALSE}
+
+fig2_csv <- read.csv("/Users/emackay/Documents/Affordability\ and\ Value\ in\ Decision\ Rules\ for\ Cost-Effectiveness\ --\ A\ Survey\ of\ Health\ Economists/figure2.csv", header = FALSE)
+# Replace the "5-Jan" with "1-5" because the csv converted it to a date lol
+fig2_csv[30,2] <- "1-5"
+# fig2_csv
+
+# First half (this will be two tables ultimately)
+fh <- fig2_csv[, c(1:3, 5:7, 9:12)]
+sh <- fig2_csv[, c(1:3, 14:16, 18:20)]
+
+# View(fh)
+
+library(stargazer)
+# stargazer(attitude)
+# stargazer(attitude, header=FALSE, type='latex')
+
+star1 = stargazer::stargazer(fh, summary=FALSE, rownames=FALSE, colnames = FALSE, header = FALSE, title = "Figure 2, Part 1", 
+          float.env = "sidewaystable", column.sep.width = "0.5pt", font.size = "tiny")
+star1 = sub('^.+\\caption.+$','Figure 3, Part 1', star1)
+
+star2 = stargazer::stargazer(sh, summary=FALSE, rownames=FALSE, colnames = FALSE, header = FALSE, title = "Figure 2, Part 1", 
+          float.env = "sidewaystable", column.sep.width = "0.5pt", font.size = "tiny")
+star2 = sub('^.+\\caption.+$','Figure 3, Part 2', star2)
+
+```
+
+```{r, results = "asis", echo = FALSE}
+
+cat(star1, sep='\n')
+cat(star2, sep='\n')
+
+```
+
+```{R tryingtoReproduceTable1, include = FALSE, eval = FALSE}
+
+responses$Q1a
+responses$RecommendAcademic <- as.factor(ifelse(responses$Q1a == "In general, decision-makers should fund Drug X at current prices.", "Yes", "No"))
+summary(responses$RecommendAcademic)
+
+responses$Gender <- as.factor(responses$Gender)
+summary(responses$Gender)
+responses <- within(responses, Gender <- relevel(Gender, ref = "Other"))
+summary(responses$Gender)
+# 
+trying <- glm(RecommendAcademic ~ YrsExperience + CountryFocus + Gender + Position, data = responses, family = "binomial")
+summary(trying)
+
+trying <- glm(RecommendAcademic ~ YrsExperience, data = responses, family = "binomial")
+summary(trying)
+
+
+
+```
+
+```{r anotherAttemptTable1, include = FALSE}
+
+my_columns <- which(names(responses) %in% c("Q1a", "Q1b", "Q1c", "Q3a_1", "Q3b", "Q3c_1", "Q3d", "Q4a", "Q4b", "Q4b_4_Category"))
+# 12 13 16 35 36 37 38 39 42 44
+#my_questions <- which(names(questions) %in% c("Q1a", "Q1b", "Q1c", "Q3a_1", "Q3b", "Q3c_1", "Q3d", "Q4a", "Q4b", "Q4b_4_Category"))
+# 12 13 15 33 34 35 36 37 39
+
+#questions[1, my_questions[i]]
+
+# Predicting which unique response
+# 12 - 2; 13 - 2; 16 - 3; 35 - 1; 36 - 2; 37 - 2; 38 - 3; 39 - 5; 42 - 2; 44 - 2
+which_unique <- c(2, 2, 3, 1, 2, 2, 3, 5, 2, 2)
+
+# New, better version dependent on column numbers
+unique(responses[, 44])[2]
+
+responses$Q1aBinary <- ifelse(responses$Q1a == "In general, decision-makers should fund Drug X at current prices.", 1, 0)
+
+# These are the two responses we are interested in, for whether they fund in academic paper and to a policymaker
+unique(responses[, my_columns[1]])[which_unique[1]]
+unique(responses[, my_columns[3]])[which_unique[3]]
+
+create_datatable_logit <- function(i){
+  
+  #print(unique(responses[, my_columns[i]])[which_unique[i]])
+  
+  responses$Test <- ifelse(responses[, my_columns[i]] == unique(responses[, my_columns[i]])[which_unique[i]], 1, 0)
+  
+  
+  # Old version
+  # unique(responses$Q4b_4_Category)[2]
+  # responses$Test <- ifelse(responses$Q4b_4_Category == unique(responses$Q4b_4_Category)[2], 1, 0)
+  
+  # summary(responses$Q3a_1)
+  # 
+  # table1vars <- c("Position", "Masters", "Age", "Gender", "YrsExperience", "NumCEA", "CountryFocus")
+  # 
+  wtp_reflection <- glm(Test ~ Position + Masters + Age + Gender + YrsExperience + NumCEA + CountryFocus,
+                        family=binomial(link='logit'),
+                        data = responses)
+  # summary(wtp_reflection)
+  # 
+  # # COLLAPSE NUM OF CEA to 0 or 1+
+  
+  a<-summary(wtp_reflection)
+  a
+  a$coefficients[,4]
+  pvals <- a$coefficients[,4]
+  # Taken from stack overflow
+  # sigSymbols <- symnum(pvals, na = FALSE, 
+  #                      cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+  #                      symbols = c("***", "**", "*", " "))
+  sigSymbols <- symnum(pvals, na = FALSE, 
+                       cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+                       symbols = c("***", "**", "*", " "))
+  sigSymbols
+  
+  my_results <- data.frame(wtp_reflection$coefficients)
+  my_results$CI_adjusted <- paste(round(wtp_reflection$coefficients, 1), " (", round(wtp_reflection$coefficients - (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ", ", round(wtp_reflection$coefficients + (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ")", sigSymbols, sep="")
+  my_results <- my_results[-c(1), ]
+  
+  
+  # FIGURE OUT ALL THIS STUFF SO I CAN JUST COPY AND PASTE
+  printed_together  <- rbind(c("", "1.00 (Ref)"), 
+                   my_results[c(1:3), ],
+                   c("", ""),
+                   c("", "1.00 (Ref)"),
+                   my_results[4, ], 
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[5, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[6, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[7, ],
+                   my_results[8, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[9, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[10, ],
+                   my_results[11, ])
+  #View(printed_together)
+  
+  #View(my_results)
+  
+  table1vars <- c("Position", "Masters", "Age", "Gender", "YrsExperience", "NumCEA", "CountryFocus")
+  
+  my_results <- data.frame(wtp_reflection$coefficients)
+  my_results$CI <- paste(round(wtp_reflection$coefficients, 1), " (", round(wtp_reflection$coefficients - (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ", ", round(wtp_reflection$coefficients + (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ")", sep="")
+  my_results <- my_results[-c(1), ]
+  
+  # Figure out how to do it one variable at a time
+  q = 1
+  for (var in table1vars) {
+    #print(var)
+    formula = paste("Test ~ ", var)
+    glm1 <- glm(formula,
+                family=binomial(link='logit'),
+                        data = responses)
+    #summary(glm1)
+    
+    #length(glm1$coefficients)
+    
+    pvals <- summary(glm1)$coefficients[,4]
+    # Taken from stack overflow
+    # sigSymbols <- symnum(pvals, na = FALSE, 
+    #                    cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+    #                    symbols = c("***", "**", "*", " "))
+    sigSymbols <- symnum(pvals, na = FALSE, 
+                   cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+                   symbols = c("***", "**", "*", " "))
+    sigSymbols
+    
+    for (j in 2:length(glm1$coefficients)){
+      my_results$CI[q] = paste(round(glm1$coefficients[j], 1), " (", round(glm1$coefficients[j] - (1.96 * summary(glm1)$coefficients[j,2]), 1), ", ", round(glm1$coefficients[j] + (1.96 * summary(glm1)$coefficients[j,2]), 1), ")", sigSymbols[j], sep = "")
+      
+      q = q+1
+      #print("Did it!")
+    }
+    
+    #paste(round(exp(glm1$coefficients[2:length(glm1$coefficients)]), 2), " (", round(exp(glm1$coefficients[2:length(glm1$coefficients)] - (1.96 * summary(glm1)$coefficients[2:length(glm1$coefficients),2])), 2), ", ", round(exp(glm1$coefficients[2:length(glm1$coefficients)] + (1.96 * summary(glm1)$coefficients[2:length(glm1$coefficients),2])), 2), ")")
+    
+  }
+  
+  printed_alone  <- rbind(c("", "1.00 (Ref)"), 
+                   my_results[c(1:3), ],
+                   c("", ""),
+                   c("", "1.00 (Ref)"),
+                   my_results[4, ], 
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[5, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[6, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[7, ],
+                   my_results[8, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[9, ],
+                   c("", ""), 
+                   c("", "1.00 (Ref)"),
+                   my_results[10, ],
+                   my_results[11, ])
+  #View(printed_alone)
+  
+  final_results <- cbind(printed_alone$CI, printed_together$CI_adjusted)
+  #View(final_results)
+  
+  variable_descriptions <- c("Academia", "Government", "Industry", "Other",
+                             "","No", "Yes",
+                             "","< 40", "40 +",
+                             "","Female", "Male or other",
+                             "","<1", "1-5","6 +",
+                             "","0","1+",
+                             "","Low- and middle-income countries","High-income countries","A combination of both")
+  length(variable_descriptions)
+  dim(final_results)
+  
+  final_named <- cbind(variable_descriptions, final_results)
+  
+  # This version doesn't exponentiate so they are log odds ratios, not ORs
+  # For simplicity, just call them the unadjusted or adjusted *coefficients*
+  # final_named <- rbind(c("", "Unadjusted ORs (95% CI)", "Adjusted ORs (95% CI)"), final_named)
+  final_named <- rbind(c("", "Unadjusted Coefficients (95% CI)", "Adjusted Coefficients (95% CI)"), final_named)
+
+  
+  variable_type <- c("Current position","","","","",
+                     "Master's","","",
+                     "Age (years)","","",
+                     "Gender identity","","",
+                     "Years of CEA experience","","","",
+                     "Number of CEAs (approx)","","",
+                     "Regional focus","","","")
+  
+  final_named <- cbind(variable_type, final_named)
+  
+  final_named <- rbind(c("", "", "", ""), final_named)
+  
+  #final_named <- rbind(c("", "Predicting the following vs the complement:", substr(paste(unique(responses[, my_columns[i]])[which_unique[i]]), 1, 65), ""), final_named)
+  
+  colnames(final_named) <- c("", "", "", "")
+  
+  #final_named <- data.frame(final_named)
+  
+  #names(final_named) <- c("", "", "", "")
+
+  # Could do something about putting the actual question there...
+  return(final_named)
+  
+}
+
+create_datatable_logit(1)
+create_datatable_logit(3)
+
+wtp_reflection <- glm(Q1aBinary ~ Position + Masters + Age + Gender + YrsExperience + NumCEA + CountryFocus,
+                        family=binomial(link='logit'),
+                        data = responses)
+summary(wtp_reflection)
+
+# wtp_reflection <- glm(Q1aBinary ~ Masters,
+#                         family=binomial(link='logit'),
+#                         data = responses)
+# summary(wtp_reflection)
+# 
+# # wtp_reflection <- glm(Q1aBinary ~ YrsExperience + CountryFocus + Gender + Position,
+# #                         family=binomial(link='logit'),
+# #                         data = responses)
+# # summary(wtp_reflection)
+# wtp_reflection <- glm(Q1aBinary ~ YrsExperience + CountryFocus + Gender + Position,
+#                         family=gaussian(link = "identity"),
+#                         data = responses)
+# summary(wtp_reflection)
+# 
+# wtp_reflection <- glm(Q1aBinary ~ Position,
+#                         family=gaussian(link = "identity"),
+#                         data = responses)
+# summary(wtp_reflection)
+
+```
+
+\pagebreak
+
+# Logistic Regression Analysis
+We performed regression analysis on two questions about survey participants' recommendations.  The first used an outcome variable of whether a researcher would recommend \textbf{in an academic paper} that decision-makers fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \$40,000/QALY but would cost 20\% of the Medicaid budget over the next 5 years.  The second had outcome variable is whether a researcher would recommend \textbf{to a policymaker} to fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \$40,000/QALY but would cost 20\% of the Medicaid budget over the next 5 years.  Both used demographic variables as covariates, including current position, whether the respondent was a Master's student, age, gender, years of CEA experience, regional focus, and number of CEAs performed.  We found some evidence that Master's students were more likely to advise funding an expensive but cost-effective intervention in an academic paper (p<0.05, adjusted and unadjusted), but little variation in other variables. Master's students were not any more or less likely to advise funding an expensive but cost-effective intervention to a policymaker.
+
+\begin{landscape}
+```{r, results='asis', echo = FALSE, cache = FALSE}
+#install.packages("stargazer")
+#library(stargazer)
+
+#cat('\\pagebreak')
+# This mistakenly refers to it as ORs when really it is log odds ratios
+# stargazer::stargazer(create_datatable_logit(1), notes=c("* p < 0.05, ** p < 0.01", "Logistic regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{in an academic paper} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher OR estimates indicate more favorable options toward drug X.", "Adjusted ORs are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+#           column.sep.width = "1pt",
+#           title = 'Logistic regression of whether to recommend drug X in an academic paper vs demographic characteristics',
+#           font.size = "normalsize",
+#           summary = FALSE,
+#           colnames = FALSE,
+#           header = FALSE)
+stargazer::stargazer(create_datatable_logit(1), notes=c("* p < 0.05, ** p < 0.01", "Logistic regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{in an academic paper} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher coefficient estimates indicate more favorable options toward drug X.", "Adjusted coefficients are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+          column.sep.width = "1pt",
+          title = 'Logistic regression of whether to recommend drug X in an academic paper vs demographic characteristics',
+          font.size = "normalsize",
+          summary = FALSE,
+          colnames = FALSE,
+          header = FALSE)
+
+#title = paste("Predicting: ", substr(paste(unique(responses[, my_columns[1]])[which_unique[1]]), start=1, stop=65))
+
+
+cat('\\pagebreak')
+# Only difference is refer to "coefficients" or ORs
+# stargazer::stargazer(create_datatable_logit(3), notes=c("* p < 0.05, ** p < 0.01", "Logistic regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{to a policymaker} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher OR estimates indicate more favorable options toward drug X.", "Adjusted ORs are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+#           column.sep.width = "1pt",
+#           title = 'Logistic regression of whether to recommend drug X to a policymaker vs demographic characteristics',
+#           font.size = "normalsize",
+#           summary = FALSE,
+#           colnames = FALSE,
+#           header = FALSE)
+stargazer::stargazer(create_datatable_logit(3), notes=c("* p < 0.05, ** p < 0.01", "Logistic regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{to a policymaker} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher coefficient estimates indicate more favorable options toward drug X.", "Adjusted coefficientss are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+          column.sep.width = "1pt",
+          title = 'Logistic regression of whether to recommend drug X to a policymaker vs demographic characteristics',
+          font.size = "normalsize",
+          summary = FALSE,
+          colnames = FALSE,
+          header = FALSE)
+
+
+```
+\end{landscape}
+
+\pagebreak
+
+# Linear Regression Analysis
+We considered a linear probability model to assess sensitivity to functional form assumptions in logistic regression.  Both regressions have similar results.
+
+\begin{landscape}
+```{r, results='asis', echo = FALSE, cache = FALSE}
+
+create_datatable_linear <- function(i){
+  
+  #print(unique(responses[, my_columns[i]])[which_unique[i]])
+  
+  responses$Test <- ifelse(responses[, my_columns[i]] == unique(responses[, my_columns[i]])[which_unique[i]], 1, 0)
+  
+  wtp_reflection <- glm(Test ~ Position + Masters + Age + Gender + YrsExperience + NumCEA + CountryFocus,
+                        family=gaussian(link = "identity"),
+                        data = responses)
+  
+  a<-summary(wtp_reflection)
+  a
+  a$coefficients[,4]
+  pvals <- a$coefficients[,4]
+  # Taken from stack overflow
+  # sigSymbols <- symnum(pvals, na = FALSE, 
+  #                      cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+  #                      symbols = c("***", "**", "*", " "))
+  sigSymbols <- symnum(pvals, na = FALSE, 
+                       cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+                       symbols = c("***", "**", "*", " "))
+  sigSymbols
+  
+  my_results <- data.frame(wtp_reflection$coefficients)
+  my_results$CI_adjusted <- paste(round(wtp_reflection$coefficients, 1), " (", round(wtp_reflection$coefficients - (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ", ", round(wtp_reflection$coefficients + (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ")", sigSymbols, sep="")
+  my_results <- my_results[-c(1), ]
+  
+  
+  # FIGURE OUT ALL THIS STUFF SO I CAN JUST COPY AND PASTE
+  printed_together  <- rbind(c("", "0.00 (Ref)"), 
+                   my_results[c(1:3), ],
+                   c("", ""),
+                   c("", "0.00 (Ref)"),
+                   my_results[4, ], 
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[5, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[6, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[7, ],
+                   my_results[8, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[9, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[10, ],
+                   my_results[11, ])
+  #View(printed_together)
+  
+  #View(my_results)
+  
+  table1vars <- c("Position", "Masters", "Age", "Gender", "YrsExperience", "NumCEA", "CountryFocus")
+  
+  my_results <- data.frame(wtp_reflection$coefficients)
+  my_results$CI <- paste(round(wtp_reflection$coefficients, 1), " (", round(wtp_reflection$coefficients - (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ", ", round(wtp_reflection$coefficients + (1.96 * summary(wtp_reflection)$coefficients[,2]), 1), ")", sep="")
+  my_results <- my_results[-c(1), ]
+  
+  # Figure out how to do it one variable at a time
+  q = 1
+  for (var in table1vars) {
+    #print(var)
+    formula = paste("Test ~ ", var)
+    glm1 <- glm(formula,
+                family=gaussian(link = "identity"),
+                        data = responses)
+    #summary(glm1)
+    
+    #length(glm1$coefficients)
+    
+    pvals <- summary(glm1)$coefficients[,4]
+    # Taken from stack overflow
+    # sigSymbols <- symnum(pvals, na = FALSE, 
+    #                    cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+    #                    symbols = c("***", "**", "*", " "))
+    sigSymbols <- symnum(pvals, na = FALSE, 
+                   cutpoints = c(0, 0.001, 0.01, 0.05, 1), 
+                   symbols = c("***", "**", "*", " "))
+    sigSymbols
+    
+    for (j in 2:length(glm1$coefficients)){
+      my_results$CI[q] = paste(round(glm1$coefficients[j], 1), " (", round(glm1$coefficients[j] - (1.96 * summary(glm1)$coefficients[j,2]), 1), ", ", round(glm1$coefficients[j] + (1.96 * summary(glm1)$coefficients[j,2]), 1), ")", sigSymbols[j], sep = "")
+      
+      q = q+1
+      #print("Did it!")
+    }
+    
+    #paste(round(exp(glm1$coefficients[2:length(glm1$coefficients)]), 2), " (", round(exp(glm1$coefficients[2:length(glm1$coefficients)] - (1.96 * summary(glm1)$coefficients[2:length(glm1$coefficients),2])), 2), ", ", round(exp(glm1$coefficients[2:length(glm1$coefficients)] + (1.96 * summary(glm1)$coefficients[2:length(glm1$coefficients),2])), 2), ")")
+    
+  }
+  
+  printed_alone  <- rbind(c("", "0.00 (Ref)"), 
+                   my_results[c(1:3), ],
+                   c("", ""),
+                   c("", "0.00 (Ref)"),
+                   my_results[4, ], 
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[5, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[6, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[7, ],
+                   my_results[8, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[9, ],
+                   c("", ""), 
+                   c("", "0.00 (Ref)"),
+                   my_results[10, ],
+                   my_results[11, ])
+  #View(printed_alone)
+  
+  final_results <- cbind(printed_alone$CI, printed_together$CI_adjusted)
+  #View(final_results)
+  
+  variable_descriptions <- c("Academia", "Government", "Industry", "Other",
+                             "","No", "Yes",
+                             "","< 40", "40 +",
+                             "","Female", "Male or other",
+                             "","<1", "1-5","6 +",
+                             "","0","1+",
+                             "","Low- and middle-income countries","High-income countries","A combination of both")
+  length(variable_descriptions)
+  dim(final_results)
+  
+  final_named <- cbind(variable_descriptions, final_results)
+  
+  final_named <- rbind(c("", "Unadjusted Coefficients (95% CI)", "Adjusted Coefficients (95% CI)"), final_named)
+  
+  variable_type <- c("Current position","","","","",
+                     "Master's","","",
+                     "Age (years)","","",
+                     "Gender identity","","",
+                     "Years of CEA experience","","","",
+                     "Number of CEAs (approx)","","",
+                     "Regional focus","","","")
+  
+  final_named <- cbind(variable_type, final_named)
+  
+  final_named <- rbind(c("", "", "", ""), final_named)
+  
+  #final_named <- rbind(c("", "Predicting the following vs the complement:", substr(paste(unique(responses[, my_columns[i]])[which_unique[i]]), 1, 65), ""), final_named)
+  
+  colnames(final_named) <- c("", "", "", "")
+  
+  #final_named <- data.frame(final_named)
+  
+  #names(final_named) <- c("", "", "", "")
+
+  # Could do something about putting the actual question there...
+  return(final_named)
+  
+}
+
+#cat('\\pagebreak')
+stargazer::stargazer(create_datatable_linear(1), notes=c("* p < 0.05, ** p < 0.01", "Linear regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{in an academic paper} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher coefficient estimates indicate more favorable options toward drug X.", "Adjusted coefficients are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+          column.sep.width = "1pt",
+          title = 'Linear regression of whether to recommend drug X in an academic paper vs demographic characteristics',
+          font.size = "normalsize",
+          summary = FALSE,
+          colnames = FALSE,
+          header = FALSE)
+
+#title = paste("Predicting: ", substr(paste(unique(responses[, my_columns[1]])[which_unique[1]]), start=1, stop=65))
+
+
+cat('\\pagebreak')
+stargazer::stargazer(create_datatable_linear(3), notes=c("* p < 0.05, ** p < 0.01", "Linear regression (n = 170).  The outcome variable is whether a researcher would recommend \\textbf{to a policymaker} that decision-makers", "       fund drug X at current prices, where drug X is a hypothetical cost-effective medication with an ICER of \\$40,000/QALY but would cost", "       20\\% of the Medicaid budget over the next 5 years. Higher coefficient estimates indicate more favorable options toward drug X.", "Adjusted coefficients are adjusted for all other variables in the table.", "Years of CEA experience refers to coursework, research, or teaching", "Master's = 'Yes' indicates that the respondent reported currently being a Master's student (n = 39).", "Gender identity 'Other' refers to participants who self reported 'Male' (n = 91), 'Non-binary' (n = 2), 'Prefer not to say' (n = 3),", " or 'Prefer to self describe' (n = 1).", "Abbreviations: Cost-effectiveness analysis (CEA)"),
+          column.sep.width = "1pt",
+          title = 'Linear regression of whether to recommend drug X to a policymaker vs demographic characteristics',
+          font.size = "normalsize",
+          summary = FALSE,
+          colnames = FALSE,
+          header = FALSE)
+
+
+```
+\end{landscape}
+
+
